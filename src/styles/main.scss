@@ -1,0 +1,20 @@
+// 1. Import Bootstrap's functions
+@import "~bootstrap/scss/functions";
+
+// 2. Import Bootstrap's default variables
+@import "~bootstrap/scss/variables";
+
+// 3. Import your custom VARIABLES file.
+@import "custom";
+
+// 4. Merge your custom "tertiary" color
+$theme-colors: map-merge(
+  $theme-colors,
+  ( "tertiary": $tertiary )
+);
+
+// 5. Import the entire Bootstrap library.
+@import "~bootstrap/scss/bootstrap";
+
+// 6. Import your custom OVERRIDE classes at the very end.
+@import "overrides";

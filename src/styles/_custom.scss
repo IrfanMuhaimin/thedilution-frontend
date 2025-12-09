@@ -1,0 +1,15 @@
+// This file should now ONLY contain your variable definitions.
+
+// 1. Color System (Sass Variables)
+$primary:   #043873;
+$secondary: #FFFFFF;
+$tertiary:  #FFE492;
+$danger:    #dc3545;
+
+// 3. CSS Custom Properties (CSS Variables)
+:root {
+  --color-primary: #{$primary};
+  --color-secondary: #{$secondary};
+  --color-tertiary: #{$tertiary};
+  --color-danger: #{$danger};
+}

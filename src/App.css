@@ -1,38 +1,34 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+/* --- STICKY FOOTER & LAYOUT --- */
+.app-layout {
+  display: flex;
   min-height: 100vh;
+}
+
+.content-wrapper {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  flex-grow: 1;
+  transition: margin-left 0.3s ease-in-out;
+  background-color: #f4f7fc;
 }
 
-.App-link {
-  color: #61dafb;
+.main-content-area {
+  flex-grow: 1;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.navbar.app-navbar {
+  background-color: var(--color-primary); 
+}
+.navbar.app-navbar .navbar-brand,
+.navbar.app-navbar .nav-link {
+  color: var(--color-secondary);
+}
+.navbar.app-navbar .nav-link:hover {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* --- FOOTER STYLES --- */
+footer.app-footer {
+  background-color: var(--color-primary);
+  color: var(--color-secondary);
 }

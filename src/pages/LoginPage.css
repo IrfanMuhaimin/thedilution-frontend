@@ -1,0 +1,13 @@
+/* Style for the left column with the background image */
+.login-image-section {
+    /* The magic happens here */
+    background: url('../assets/login-background.jpg');
+    background-size: cover;       /* Ensures the image covers the whole area */
+    background-position: center;  /* Centers the image */
+    background-repeat: no-repeat; /* Prevents the image from repeating */
+}
+
+/* Style for the right column containing the form */
+.login-form-section {
+    padding: 3rem; /* Adds some space around the form */
+}
