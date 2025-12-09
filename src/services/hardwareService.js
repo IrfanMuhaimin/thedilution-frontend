@@ -1,6 +1,6 @@
 //services/hardwareService.js
 
-const API_URL = 'https://advantech.thedilution.my/api/hardware';
+const API_URL = `${process.env.REACT_APP_API_URL}/hardware`;
 
 // Helper function to get the auth token from localStorage
 const getAuthHeader = () => {

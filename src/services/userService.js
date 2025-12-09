@@ -1,5 +1,5 @@
 //services/userService.js
-const API_URL = 'https://advantech.thedilution.my/api/users';
+const API_URL = `${process.env.REACT_APP_API_URL}/users`;
 
 // Helper function to get the auth token from localStorage
 const getAuthHeader = () => {

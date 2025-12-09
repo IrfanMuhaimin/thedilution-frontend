@@ -1,4 +1,4 @@
-const API_URL = 'https://advantech.thedilution.my/api/notifications';
+const API_URL = `${process.env.REACT_APP_API_URL}/notifications`;
 
 // Helper function to get the auth token from localStorage
 const getAuthHeader = () => {

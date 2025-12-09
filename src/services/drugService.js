@@ -1,5 +1,5 @@
 //services/drugService.js
-const BASE_URL = 'https://advantech.thedilution.my/api';
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 // Helper function to get the auth token from localStorage
 const getAuthHeader = () => {

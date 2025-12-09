@@ -1,5 +1,5 @@
-const INVENTORY_API_URL = 'https://advantech.thedilution.my/api/inventory';
-const STOCK_API_URL = 'https://advantech.thedilution.my/api/stock';
+const INVENTORY_API_URL = `${process.env.REACT_APP_API_URL}/inventory`;
+const STOCK_API_URL = `${process.env.REACT_APP_API_URL}/stock`;
 
 // Helper function to get the auth token from localStorage
 const getAuthHeader = () => {
