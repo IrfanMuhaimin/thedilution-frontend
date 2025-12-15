@@ -12,17 +12,13 @@ function InventoryPage() {
     const [inventoryList, setInventoryList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
-    // Modal states
     const [showAddMasterModal, setShowAddMasterModal] = useState(false);
     const [showEditMasterModal, setShowEditMasterModal] = useState(false);
     const [showManageStockModal, setShowManageStockModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-
-    // Data for modals
     const [selectedItem, setSelectedItem] = useState(null);
     const [itemToDelete, setItemToDelete] = useState(null);
-    const [isDeleting, setIsDeleting] = useState(false); // <-- ADD THIS STATE for master delete loading
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchInventory = useCallback(async () => {
         try {
@@ -78,10 +74,9 @@ function InventoryPage() {
         }
     };
 
-    // --- MODIFIED: Added loading state logic for master delete ---
     const handleConfirmDelete = async () => {
         if (!itemToDelete) return;
-        setIsDeleting(true); // Start loading
+        setIsDeleting(true);
         try {
             await inventoryService.deleteInventoryMaster(itemToDelete.inventoryId);
             setShowDeleteModal(false);
@@ -89,9 +84,9 @@ function InventoryPage() {
             fetchInventory();
         } catch (err) {
             setError(err.message);
-            setShowDeleteModal(false); // Close modal even on error
+            setShowDeleteModal(false);
         } finally {
-            setIsDeleting(false); // Stop loading in all cases
+            setIsDeleting(false);
         }
     };
 
@@ -166,7 +161,7 @@ function InventoryPage() {
                 handleClose={() => setShowDeleteModal(false)}
                 handleConfirm={handleConfirmDelete}
                 userName={itemToDelete?.name}
-                isDeleting={isDeleting} // <-- Pass the loading state to the modal
+                isDeleting={isDeleting}
             />
         </>
     );

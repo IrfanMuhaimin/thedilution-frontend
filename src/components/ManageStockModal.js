@@ -10,11 +10,9 @@ function ManageStockModal({ show, handleClose, inventoryItem, refreshData }) {
     const [error, setError] = useState('');
     const [showBatchModal, setShowBatchModal] = useState(false);
     const [currentBatch, setCurrentBatch] = useState(null);
-
-    // --- State specifically for the delete confirmation ---
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [batchToDelete, setBatchToDelete] = useState(null);
-    const [isDeleting, setIsDeleting] = useState(false); // <-- ADD THIS STATE for batch delete loading
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleAddBatch = () => {
         setCurrentBatch(null);
@@ -26,32 +24,29 @@ function ManageStockModal({ show, handleClose, inventoryItem, refreshData }) {
         setShowBatchModal(true);
     };
 
-    // This function just opens the confirmation modal
     const handleDeleteBatch = (batch) => {
         setBatchToDelete(batch);
         setShowDeleteModal(true);
     };
     
-    // --- MODIFIED: This new function handles the actual deletion with loading state ---
     const handleConfirmDeleteBatch = async () => {
         if (!batchToDelete) return;
-        setIsDeleting(true); // Start loading
+        setIsDeleting(true);
         setError('');
         try {
             await inventoryService.deleteStockBatch(batchToDelete.inventoryStockId);
             setShowDeleteModal(false);
-            await refreshData(); // Refresh the data in the background
+            await refreshData();
         } catch (err) {
-            setError(err.message); // Show error inside the ManageStockModal
-            setShowDeleteModal(false); // Still close the confirmation modal
+            setError(err.message);
+            setShowDeleteModal(false);
         } finally {
-            setIsDeleting(false); // Stop loading
+            setIsDeleting(false);
             setBatchToDelete(null);
         }
     };
 
     const handleSaveBatch = async (batchData) => {
-        // This function now throws errors to be caught by the StockBatchModal
         if (currentBatch?.inventoryStockId) {
             await inventoryService.updateStockBatch(currentBatch.inventoryStockId, batchData);
         } else {
@@ -97,16 +92,14 @@ function ManageStockModal({ show, handleClose, inventoryItem, refreshData }) {
                 </Modal.Body>
             </Modal>
 
-            {/* The StockBatchModal now handles its own save/loading state */}
             <StockBatchModal show={showBatchModal} handleClose={() => setShowBatchModal(false)} handleSave={handleSaveBatch} batch={currentBatch} />
 
-            {/* This DeleteConfirmationModal is now controlled by this component's state */}
             <DeleteConfirmationModal
                 show={showDeleteModal}
                 handleClose={() => setShowDeleteModal(false)}
                 handleConfirm={handleConfirmDeleteBatch}
                 userName={`Batch #${batchToDelete?.batchNumber}`}
-                isDeleting={isDeleting} // <-- Pass the loading state here
+                isDeleting={isDeleting}
             />
         </>
     );
