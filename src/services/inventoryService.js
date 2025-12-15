@@ -36,6 +36,20 @@ export const addInventoryMaster = async (masterData) => {
     return response.json();
 };
 
+// PUT (update) an inventory master item's core details
+export const updateInventoryMaster = async (inventoryId, masterData) => {
+    const response = await fetch(`${INVENTORY_API_URL}/${inventoryId}`, {
+        method: 'PUT',
+        headers: getAuthHeader(),
+        body: JSON.stringify(masterData)
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update inventory master');
+    }
+    return response.json();
+};
+
 // DELETE an inventory master item
 export const deleteInventoryMaster = async (inventoryId) => {
     const response = await fetch(`${INVENTORY_API_URL}/${inventoryId}`, {
@@ -48,7 +62,6 @@ export const deleteInventoryMaster = async (inventoryId) => {
     }
     return response.json();
 };
-
 
 // --- INVENTORY STOCK BATCH FUNCTIONS ---
 

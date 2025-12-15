@@ -111,7 +111,7 @@ function JobcardsPage() {
         <>
             <Card className="shadow-sm border-light-subtle">
                 <Card.Header className="d-flex justify-content-between align-items-center bg-white py-3">
-                    <h2 className="mb-0">Job Card Management</h2>
+                    <h2 className="mb-0">Jobcard Management</h2>
                     <Button className="btn-custom-primary" onClick={handleAdd}>
                         <FaPlus className="me-2" /> Create Job Card
                     </Button>

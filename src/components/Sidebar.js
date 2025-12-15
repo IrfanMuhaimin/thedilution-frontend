@@ -6,6 +6,10 @@ import {
   FaCog, FaBell, FaChartBar, FaClipboardList, FaServer
 } from 'react-icons/fa';
 import '../Sidebar.css';
+import logo1 from '../assets/logo1.png';
+import logo2 from '../assets/logo2.png';
+import logo3 from '../assets/logo3.png';
+import logo4 from '../assets/logo4.png';
 
 function Sidebar({ isOpen }) {
   const location = useLocation(); // Hook to get the current page's path
@@ -37,6 +41,16 @@ function Sidebar({ isOpen }) {
           </Nav.Link>
         ))}
       </Nav>
+      <div className="sidebar-footer">
+        <div className="logo-row">
+          <img src={logo1} alt="Logo 1" className="sidebar-logo1" />
+          <img src={logo3} alt="Logo 3" className="sidebar-logo2" />
+        </div>
+        <div className="logo-row">
+          <img src={logo2} alt="Logo 2" className="sidebar-logo3" />
+          <img src={logo4} alt="Logo 4" className="sidebar-logo4" />
+        </div>
+      </div>
     </div>
   );
 }
