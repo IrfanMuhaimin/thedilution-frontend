@@ -1,0 +1,49 @@
+.controls {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+/* Custom button styles to match the original prototype */
+.controls #btn-task1 { 
+    background-color: #28a745; 
+    color: white; 
+    border-color: #28a745;
+    font-weight: bold;
+}
+.controls #btn-task1:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.controls #btn-task2 { 
+    background-color: #007bff; 
+    color: white; 
+    border-color: #007bff;
+    font-weight: bold;
+}
+.controls #btn-task2:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+#task_log_table {
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+
+#task_log_table th,
+#task_log_table td {
+    vertical-align: middle;
+}
+
+/* Style table headers to match prototype */
+#task_log_table .pi-header { background-color: #cce5ff !important; }
+#task_log_table .unity-header { background-color: #fff3cd !important; }
+
+/* Align details column to the left for better readability */
+#task_log_table .text-start {
+    text-align: left !important;
+}

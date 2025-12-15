@@ -3,7 +3,8 @@ import { Nav } from 'react-bootstrap';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   FaTachometerAlt, FaUsers, FaCapsules, FaBoxOpen, 
-  FaCog, FaBell, FaChartBar, FaClipboardList, FaServer
+  FaCog, FaBell, FaChartBar, FaClipboardList, FaServer,
+  FaUserShield // <-- 1. Import the new icon
 } from 'react-icons/fa';
 import '../Sidebar.css';
 import logo1 from '../assets/logo1.png';
@@ -12,12 +13,14 @@ import logo3 from '../assets/logo3.png';
 import logo4 from '../assets/logo4.png';
 
 function Sidebar({ isOpen }) {
-  const location = useLocation(); // Hook to get the current page's path
+  const location = useLocation();
   const sidebarClass = isOpen ? "sidebar" : "sidebar collapsed";
 
   const navLinks = [
     { path: "/", icon: <FaTachometerAlt className="me-3" />, text: "Dashboard" },
     { path: "/users", icon: <FaUsers className="me-3" />, text: "User Management" },
+    // --- 2. ADD THIS NEW NAVIGATION LINK ---
+    { path: "/face-id", icon: <FaUserShield className="me-3" />, text: "Face ID Management" },
     { path: "/hardware", icon: <FaServer className="me-3" />, text: "Hardware" },
     { path: "/inventory", icon: <FaBoxOpen className="me-3" />, text: "Inventory" },
     { path: "/drugs", icon: <FaCapsules className="me-3" />, text: "Drug Management" },

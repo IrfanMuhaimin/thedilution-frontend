@@ -1,0 +1,74 @@
+.security-overlay {
+    /* --- THIS IS THE KEY LAYOUT FIX --- */
+    position: fixed; /* Position relative to the entire browser window */
+    top: 0;
+    left: 0;
+    width: 100vw; /* 100% of the viewport width */
+    height: 100vh; /* 100% of the viewport height */
+    z-index: 1050; /* Ensure it is on top of everything, including the navbar */
+    
+    /* Styling for the dark background and content alignment */
+    background: rgba(26, 32, 46, 0.97); /* Dark background from your theme */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    padding: 20px;
+
+    /* Add a subtle blur to any background content that might peek through */
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+
+.security-overlay h1 {
+    font-size: 3rem; /* Make the title larger */
+    font-weight: bold;
+}
+
+.security-overlay p {
+    font-size: 1.25rem;
+    color: #adb5bd; /* A lighter gray for the subtitle */
+}
+
+.security-overlay .video-frame-container {
+    width: 640px; /* Make the video container larger */
+    max-width: 90%;
+    height: 480px; /* Adjust height for a 4:3 aspect ratio */
+    background: #000;
+    border-radius: 12px; /* Smoother corners */
+    border: 4px solid #4a5568;
+    overflow: hidden;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.security-overlay iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.security-overlay .video-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.security-overlay .status-box {
+    margin-top: 20px;
+    padding: 12px 30px; /* Make the status box larger */
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 1.5rem; /* Make the status text larger */
+    min-width: 250px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.security-overlay .status-scanning { background: #f39c12; }
+.security-overlay .status-verified { background: #2ecc71; }
+.security-overlay .status-error { background: #e74c3c; }

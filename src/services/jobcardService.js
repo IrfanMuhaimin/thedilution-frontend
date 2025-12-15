@@ -64,3 +64,22 @@ export const deleteJobcard = async (jobcardId) => {
     }
     return response.json();
 };
+
+// --- THIS IS THE MISSING FUNCTION ---
+/**
+ * Calls the backend to execute an approved jobcard.
+ * @param {number} jobcardId - The ID of the jobcard to execute.
+ * @returns {Promise<object>} A promise that resolves with the success message from the server.
+ */
+export const executeJobcard = async (jobcardId) => {
+    const response = await fetch(`${API_URL}/${jobcardId}/execute`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to execute job card');
+    }
+    return response.json();
+};

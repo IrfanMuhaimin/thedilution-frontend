@@ -16,6 +16,7 @@
   flex-grow: 1;
 }
 
+/* --- NAVBAR STYLES --- */
 .navbar.app-navbar {
   background-color: var(--color-primary); 
 }

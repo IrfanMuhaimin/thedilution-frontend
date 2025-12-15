@@ -1,4 +1,3 @@
-//context/AuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,8 +37,6 @@ export const AuthProvider = ({ children }) => {
         token: data.accessToken      
       };
 
-      console.log('User Data being saved:', userData);
-
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
       
@@ -53,7 +50,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // This is the correct client-side logout.
     setUser(null);
     localStorage.removeItem('user');
     navigate('/login');
