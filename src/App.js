@@ -22,8 +22,9 @@ import FaceIdPage from './pages/FaceIdPage';
 // Import layout and security components
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import Footer from './components/Footer';
-import SecurityOverlay from './components/SecurityOverlay';
+// We no longer import SecurityOverlay here
 
 // Import global styles
 import './Sidebar.css';
@@ -33,16 +34,9 @@ import './styles/main.scss';
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { user, logout } = useAuth();
-  
-  // --- STATE FOR THE GLOBAL SECURITY CHECK ---
-  // Tracks if the user has passed the face scan in the current session.
-  const [isVerified, setIsVerified] = useState(false);
-  // Controls the visibility of the full-page security overlay.
-  const [showSecurityCheck, setShowSecurityCheck] = useState(false);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  // If no user is logged in, render only the login page.
   if (!user) {
     return (
       <Routes>
@@ -53,19 +47,6 @@ function App() {
 
   return (
     <div className="app-layout">
-      {/* 
-        The SecurityOverlay is placed here at the top level.
-        Because its CSS uses 'position: fixed', it will cover the entire screen
-        whenever 'showSecurityCheck' is true, regardless of other components.
-      */}
-      <SecurityOverlay 
-        isVisible={showSecurityCheck} 
-        onVerified={() => {
-          setIsVerified(true);       // Set verification status to true
-          setShowSecurityCheck(false); // Hide the overlay
-        }} 
-      />
-
       <Sidebar isOpen={isSidebarOpen} />
       
       <div className="content-wrapper" style={{ marginLeft: isSidebarOpen ? '250px' : '0' }}>
@@ -92,21 +73,21 @@ function App() {
         <main className="main-content-area">
           <Container fluid className="p-3">
             <Routes>
-              {/* The JobcardsPage route is special. We pass it the verification status
-                  and a function to trigger the security check. */}
+              {/* The JobcardsPage route is now a standard route again */}
+              <Route path="/jobcards" element={<ProtectedRoute><JobcardsPage /></ProtectedRoute>} />
+              
               <Route 
-                path="/jobcards" 
+                path="/face-id" 
                 element={
                   <ProtectedRoute>
-                    <JobcardsPage 
-                      isVerified={isVerified}
-                      initiateSecurityCheck={() => setShowSecurityCheck(true)}
-                    />
+                    <AdminRoute>
+                      <FaceIdPage />
+                    </AdminRoute>
                   </ProtectedRoute>
                 } 
               />
               
-              {/* All other routes are standard */}
+              {/* All other routes */}
               <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
@@ -117,9 +98,6 @@ function App() {
               <Route path="/notifications" element={<ProtectedRoute><NotificationPage /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><ReportPage /></ProtectedRoute>} />
               <Route path="/consumptions" element={<ProtectedRoute><ConsumptionPage /></ProtectedRoute>} />
-              <Route path="/face-id" element={<ProtectedRoute><FaceIdPage /></ProtectedRoute>} />
-              
-              {/* Fallback route */}
               <Route path="*" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             </Routes>
           </Container>

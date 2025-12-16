@@ -1,10 +1,11 @@
 import React from 'react';
 import { Nav } from 'react-bootstrap';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // 1. Import useAuth
 import { 
   FaTachometerAlt, FaUsers, FaCapsules, FaBoxOpen, 
   FaCog, FaBell, FaChartBar, FaClipboardList, FaServer,
-  FaUserShield // <-- 1. Import the new icon
+  FaUserShield 
 } from 'react-icons/fa';
 import '../Sidebar.css';
 import logo1 from '../assets/logo1.png';
@@ -14,26 +15,28 @@ import logo4 from '../assets/logo4.png';
 
 function Sidebar({ isOpen }) {
   const location = useLocation();
+  const { user } = useAuth(); // 2. Get the current user
   const sidebarClass = isOpen ? "sidebar" : "sidebar collapsed";
 
   const navLinks = [
-    { path: "/", icon: <FaTachometerAlt className="me-3" />, text: "Dashboard" },
-    { path: "/users", icon: <FaUsers className="me-3" />, text: "User Management" },
-    // --- 2. ADD THIS NEW NAVIGATION LINK ---
-    { path: "/face-id", icon: <FaUserShield className="me-3" />, text: "Face ID Management" },
-    { path: "/hardware", icon: <FaServer className="me-3" />, text: "Hardware" },
-    { path: "/inventory", icon: <FaBoxOpen className="me-3" />, text: "Inventory" },
-    { path: "/drugs", icon: <FaCapsules className="me-3" />, text: "Drug Management" },
-    { path: "/jobcards", icon: <FaClipboardList className="me-3" />, text: "Jobcards" },
-    { path: "/wise-paas", icon: <FaCog className="me-3" />, text: "Wise-Paas" },
-    { path: "/notifications", icon: <FaBell className="me-3" />, text: "Notification" },
-    { path: "/reports", icon: <FaChartBar className="me-3" />, text: "Report" },
+    { path: "/", icon: <FaTachometerAlt className="me-3" />, text: "Dashboard", roles: ['Admin', 'Pharmacist', 'Doctor'] },
+    { path: "/users", icon: <FaUsers className="me-3" />, text: "User Management", roles: ['Admin'] },
+    // --- 3. ADD 'roles' property to the links ---
+    { path: "/face-id", icon: <FaUserShield className="me-3" />, text: "Face ID Management", roles: ['Admin'] },
+    { path: "/hardware", icon: <FaServer className="me-3" />, text: "Hardware", roles: ['Admin', 'Pharmacist'] },
+    { path: "/inventory", icon: <FaBoxOpen className="me-3" />, text: "Inventory", roles: ['Admin', 'Pharmacist'] },
+    { path: "/drugs", icon: <FaCapsules className="me-3" />, text: "Drug Management", roles: ['Admin', 'Pharmacist', 'Doctor'] },
+    { path: "/jobcards", icon: <FaClipboardList className="me-3" />, text: "Jobcards", roles: ['Admin', 'Pharmacist', 'Doctor'] },
+    { path: "/wise-paas", icon: <FaCog className="me-3" />, text: "Wise-Paas", roles: ['Admin', 'Pharmacist'] },
+    { path: "/notifications", icon: <FaBell className="me-3" />, text: "Notification", roles: ['Admin', 'Pharmacist', 'Doctor'] },
+    { path: "/reports", icon: <FaChartBar className="me-3" />, text: "Report", roles: ['Admin', 'Pharmacist'] },
   ];
 
   return (
     <div className={sidebarClass}>
       <Nav className="flex-column p-3">
-        {navLinks.map((link) => (
+        {/* --- 4. Filter the links based on the user's role --- */}
+        {navLinks.filter(link => link.roles.includes(user.role)).map((link) => (
           <Nav.Link 
             key={link.path}
             as={Link} 

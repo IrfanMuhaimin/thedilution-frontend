@@ -1,17 +1,29 @@
 import React, { useState } from 'react';
-import { Card, Tabs, Tab } from 'react-bootstrap';
+import { Card, Tabs, Tab, Alert } from 'react-bootstrap';
+import { useAuth } from '../context/AuthContext';
 import JobcardManagementTab from '../components/tabs/JobcardManagementTab';
 import RobotExecutionTab from '../components/tabs/RobotExecutionTab';
 import SecurityOverlay from '../components/SecurityOverlay';
 import '../styles/DrugManagement.css'; 
 
+// --- DEVELOPMENT SWITCH: Set this to 'false' to disable the Face ID check ---
+const IS_FACE_ID_ENABLED = false;
+
 function JobcardsPage() {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('management');
-    const [isRobotTabVerified, setIsRobotTabVerified] = useState(false);
+    const [isVerified, setIsVerified] = useState(!IS_FACE_ID_ENABLED); // If security is disabled, we are "verified" by default
     const [showSecurityCheck, setShowSecurityCheck] = useState(false);
 
+    if (!user) {
+        return null; 
+    }
+
+    const canAccessExecution = user.role === 'Admin' || user.role === 'Pharmacist';
+
     const handleTabSelect = (key) => {
-        if (key === 'execution' && !isRobotTabVerified) {
+        // --- The security check is now conditional based on our switch ---
+        if (key === 'execution' && canAccessExecution && !isVerified && IS_FACE_ID_ENABLED) {
             setShowSecurityCheck(true);
             setActiveTab(key); 
         } else {
@@ -23,15 +35,14 @@ function JobcardsPage() {
     };
 
     const handleVerificationSuccess = () => {
-        setIsRobotTabVerified(true);
+        setIsVerified(true);
         setShowSecurityCheck(false);
         setActiveTab('execution');
     };
     
-    // --- NEW: This function will be called when the user clicks "Close" on the overlay ---
     const handleCloseSecurityCheck = () => {
-        setShowSecurityCheck(false);      // Hide the overlay
-        setActiveTab('management'); // Switch back to the Jobcard Management tab
+        setShowSecurityCheck(false);
+        setActiveTab('management');
     };
 
     return (
@@ -41,7 +52,6 @@ function JobcardsPage() {
             </Card.Header>
             <Card.Body className="position-relative">
                 
-                {/* --- Pass the new 'onClose' handler to the overlay --- */}
                 <SecurityOverlay 
                     isVisible={showSecurityCheck} 
                     onVerified={handleVerificationSuccess} 
@@ -59,7 +69,14 @@ function JobcardsPage() {
                         <JobcardManagementTab onExecuteSuccess={() => handleTabSelect('execution')} />
                     </Tab>
                     <Tab eventKey="execution" title="Robot Execution & Monitoring">
-                        {isRobotTabVerified ? (
+                        {!canAccessExecution ? (
+                            <div className="text-center p-5">
+                                <Alert variant="warning">
+                                    <Alert.Heading>Access Denied</Alert.Heading>
+                                    <p>Your role ({user.role}) does not have permission to access this feature.</p>
+                                </Alert>
+                            </div>
+                        ) : isVerified ? (
                             <RobotExecutionTab />
                         ) : (
                             <div className="text-center p-5">
