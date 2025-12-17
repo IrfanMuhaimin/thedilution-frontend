@@ -1,11 +1,11 @@
 import React from 'react';
 import { Nav } from 'react-bootstrap';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // 1. Import useAuth
+import { useAuth } from '../context/AuthContext';
 import { 
   FaTachometerAlt, FaUsers, FaCapsules, FaBoxOpen, 
   FaCog, FaBell, FaChartBar, FaClipboardList, FaServer,
-  FaUserShield 
+  FaUserShield, FaFlask
 } from 'react-icons/fa';
 import '../Sidebar.css';
 import logo1 from '../assets/logo1.png';
@@ -15,39 +15,58 @@ import logo4 from '../assets/logo4.png';
 
 function Sidebar({ isOpen }) {
   const location = useLocation();
-  const { user } = useAuth(); // 2. Get the current user
+  const { user } = useAuth();
   const sidebarClass = isOpen ? "sidebar" : "sidebar collapsed";
 
   const navLinks = [
-    { path: "/", icon: <FaTachometerAlt className="me-3" />, text: "Dashboard", roles: ['Admin', 'Pharmacist', 'Doctor'] },
-    { path: "/users", icon: <FaUsers className="me-3" />, text: "User Management", roles: ['Admin'] },
-    // --- 3. ADD 'roles' property to the links ---
-    { path: "/face-id", icon: <FaUserShield className="me-3" />, text: "Face ID Management", roles: ['Admin'] },
-    { path: "/hardware", icon: <FaServer className="me-3" />, text: "Hardware", roles: ['Admin', 'Pharmacist'] },
-    { path: "/inventory", icon: <FaBoxOpen className="me-3" />, text: "Inventory", roles: ['Admin', 'Pharmacist'] },
-    { path: "/drugs", icon: <FaCapsules className="me-3" />, text: "Drug Management", roles: ['Admin', 'Pharmacist', 'Doctor'] },
-    { path: "/jobcards", icon: <FaClipboardList className="me-3" />, text: "Jobcards", roles: ['Admin', 'Pharmacist', 'Doctor'] },
-    { path: "/wise-paas", icon: <FaCog className="me-3" />, text: "Wise-Paas", roles: ['Admin', 'Pharmacist'] },
-    { path: "/notifications", icon: <FaBell className="me-3" />, text: "Notification", roles: ['Admin', 'Pharmacist', 'Doctor'] },
-    { path: "/reports", icon: <FaChartBar className="me-3" />, text: "Report", roles: ['Admin', 'Pharmacist'] },
+    { path: "/", icon: <FaTachometerAlt />, text: "Dashboard", roles: ['Admin', 'Pharmacist', 'Doctor'], section: 'main' },
+    { path: "/users", icon: <FaUsers />, text: "User Management", roles: ['Admin'], section: 'management' },
+    { path: "/face-id", icon: <FaUserShield />, text: "Face ID Management", roles: ['Admin'], section: 'management' },
+    { path: "/hardware", icon: <FaServer />, text: "Hardware", roles: ['Admin', 'Pharmacist'], section: 'system' },
+    { path: "/inventory", icon: <FaBoxOpen />, text: "Inventory", roles: ['Admin', 'Pharmacist'], section: 'operations' },
+    { path: "/drugs", icon: <FaCapsules />, text: "Drug Management", roles: ['Admin', 'Pharmacist', 'Doctor'], section: 'operations' },
+    { path: "/jobcards", icon: <FaClipboardList />, text: "Jobcards", roles: ['Admin', 'Pharmacist', 'Doctor'], section: 'operations' },
+    { path: "/wise-paas", icon: <FaCog />, text: "Wise-Paas", roles: ['Admin', 'Pharmacist'], section: 'system' },
+    { path: "/notifications", icon: <FaBell />, text: "Notifications", roles: ['Admin', 'Pharmacist', 'Doctor'], section: 'system' },
+    { path: "/reports", icon: <FaChartBar />, text: "Reports", roles: ['Admin', 'Pharmacist'], section: 'analytics' },
   ];
+
+  // Filter links by user role
+  const filteredLinks = navLinks.filter(link => link.roles.includes(user.role));
 
   return (
     <div className={sidebarClass}>
-      <Nav className="flex-column p-3">
-        {/* --- 4. Filter the links based on the user's role --- */}
-        {navLinks.filter(link => link.roles.includes(user.role)).map((link) => (
+      {/* Brand Header */}
+      <div className="sidebar-brand">
+        <div className="sidebar-brand-content">
+          <div className="sidebar-brand-icon">
+            <FaFlask />
+          </div>
+          <div className="sidebar-brand-text">
+            <span className="sidebar-brand-name">TheDilution</span>
+            <span className="sidebar-brand-tagline">Pharmacy System</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <Nav className="flex-column">
+        {filteredLinks.map((link) => (
           <Nav.Link 
             key={link.path}
             as={Link} 
             to={link.path} 
             className={location.pathname === link.path ? 'active' : ''}
           >
-            {link.icon} {link.text}
+            <span className="nav-icon">{link.icon}</span>
+            <span className="nav-text">{link.text}</span>
           </Nav.Link>
         ))}
       </Nav>
+
+      {/* Footer with logos */}
       <div className="sidebar-footer">
+        <div className="sidebar-footer-divider"></div>
         <div className="logo-row">
           <img src={logo1} alt="Logo 1" className="sidebar-logo1" />
           <img src={logo3} alt="Logo 3" className="sidebar-logo2" />

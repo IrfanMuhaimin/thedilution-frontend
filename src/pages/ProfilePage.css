@@ -1,12 +1,89 @@
+/* ============================================
+   PROFILE PAGE - MODERN PREMIUM STYLES
+   ============================================ */
+
+/* === PROFILE AVATAR === */
 .profile-avatar {
     width: 120px;
     height: 120px;
-    background-color: var(--color-primary);
-    color: var(--color-secondary);
+    background: linear-gradient(135deg, #043873 0%, #0a4f9e 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #ffffff;
     font-size: 3rem;
-    font-weight: bold;
+    font-weight: 700;
+    text-transform: uppercase;
+    box-shadow: 0 12px 30px rgba(4, 56, 115, 0.3);
+    position: relative;
+}
+
+.profile-avatar::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFE492 0%, #ffd966 100%);
+    z-index: -1;
+}
+
+.profile-avatar::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: #10b981;
+    border-radius: 50%;
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+/* === PROFILE INFO SECTION === */
+.text-center h4 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-top: 1.25rem !important;
+}
+
+.text-center .text-muted {
+    font-size: 1rem;
+    background: linear-gradient(135deg, rgba(4, 56, 115, 0.1) 0%, rgba(4, 56, 115, 0.05) 100%);
+    color: #043873 !important;
+    padding: 0.375rem 1rem;
+    border-radius: 20px;
+    display: inline-block;
+    font-weight: 600;
+}
+
+/* === FORM SECTION DIVIDERS === */
+hr.my-3 {
+    border: none;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, rgba(4, 56, 115, 0.1) 50%, transparent 100%);
+    margin: 1.5rem 0;
+}
+
+/* === DISABLED INPUTS === */
+.form-control:disabled,
+.form-control[readonly] {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #64748b !important;
+    cursor: not-allowed;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 767px) {
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        font-size: 2.5rem;
+    }
 }

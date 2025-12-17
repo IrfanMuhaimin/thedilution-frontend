@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Row, Col, Spinner, Alert, ButtonGroup, Button, ListGroup } from 'react-bootstrap';
+import { Spinner } from 'react-bootstrap';
+import { 
+    FaTachometerAlt, FaUsers, FaServer, FaClipboardList, 
+    FaChartPie, FaCogs, FaCalendarAlt, FaExclamationTriangle,
+    FaArrowUp, FaArrowDown, FaCheckCircle, FaClock, FaChartBar
+} from 'react-icons/fa';
 import * as dashboardService from '../services/dashboardService';
 import RolePieChart from '../components/charts/RolePieChart';
 import HardwareDoughnutChart from '../components/charts/HardwareDoughnutChart';
 import JobcardBarChart from '../components/charts/JobcardBarChart';
+import '../styles/Dashboard.css';
 
 function DashboardPage() {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [timeFilter, setTimeFilter] = useState(7); // Default to weekly (7 days)
+    const [timeFilter, setTimeFilter] = useState(7);
 
     const fetchData = useCallback(async () => {
         try {
@@ -28,91 +34,174 @@ function DashboardPage() {
         fetchData();
     }, [fetchData]);
 
+    // Format current date
+    const formatDate = () => {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        return new Date().toLocaleDateString('en-US', options);
+    };
+
+    // Calculate stats from dashboard data
+    const getStats = () => {
+        if (!dashboardData) return [];
+        
+        const totalUsers = dashboardData.userDistribution?.reduce((acc, item) => acc + item.value, 0) || 0;
+        const totalMachines = dashboardData.machineDistribution?.reduce((acc, item) => acc + item.value, 0) || 0;
+        const activeMachines = dashboardData.activeMachines?.length || 0;
+        const totalJobcards = dashboardData.dilutionStats?.reduce((acc, item) => 
+            acc + (item.completed || 0) + (item.pending || 0), 0) || 0;
+
+
+    };
+
     if (loading) {
-        return <div className="text-center py-5"><Spinner animation="border" /></div>;
+        return (
+            <div className="dashboard-page">
+                <div className="dashboard-loading">
+                    <div className="dashboard-spinner"></div>
+                    <span className="dashboard-loading-text">Loading dashboard data...</span>
+                </div>
+            </div>
+        );
     }
 
     if (error) {
-        return <Alert variant="danger">{error}</Alert>;
+        return (
+            <div className="dashboard-page">
+                <div className="dashboard-error">
+                    <FaExclamationTriangle className="dashboard-error-icon" />
+                    <span>{error}</span>
+                </div>
+            </div>
+        );
     }
 
+    const stats = getStats();
+
     return (
-        <Row>
-            {/* --- TOP ROW: THREE CARDS IN ONE LINE --- */}
-            {/* On medium (md) screens and up, each card takes up 4 of 12 columns */}
+        <div className="dashboard-page">
+            {/* Header */}
+            <div className="dashboard-header">
+                <div className="dashboard-header-content">
+                    <div className="dashboard-title-section">
+                        {/* <div className="dashboard-icon">
+                            <FaTachometerAlt />
+                        </div> */}
+                        <div>
+                            <h1 className="dashboard-title">Dashboard</h1>
+                            <p className="dashboard-subtitle">Welcome back! Here's what's happening today.</p>
+                        </div>
+                    </div>
+                    <div className="dashboard-date">
+                        <FaCalendarAlt className="dashboard-date-icon" />
+                        <span className="dashboard-date-text">{formatDate()}</span>
+                    </div>
+                </div>
+            </div>
+
             
-            {/* CARD 1: ROLE DISTRIBUTION */}
-            <Col md={4} className="mb-4">
-                <Card className="shadow-sm h-100">
-                    <Card.Body>
+
+            {/* Charts Row */}
+            <div className="dashboard-charts">
+                {/* Role Distribution */}
+                <div className="chart-card">
+                    <div className="chart-card-header">
+                        <div className="chart-card-title">
+                            <div className="chart-card-title-icon">
+                                <FaChartPie />
+                            </div>
+                            <h5>User Distribution</h5>
+                        </div>
+                    </div>
+                    <div className="chart-card-body">
                         {dashboardData && <RolePieChart data={dashboardData.userDistribution} />}
-                    </Card.Body>
-                </Card>
-            </Col>
+                    </div>
+                </div>
 
-            {/* CARD 2: HARDWARE DISTRIBUTION */}
-            <Col md={4} className="mb-4">
-                <Card className="shadow-sm h-100">
-                    <Card.Body>
+                {/* Hardware Distribution */}
+                <div className="chart-card">
+                    <div className="chart-card-header">
+                        <div className="chart-card-title">
+                            <div className="chart-card-title-icon">
+                                <FaCogs />
+                            </div>
+                            <h5>Hardware Status</h5>
+                        </div>
+                    </div>
+                    <div className="chart-card-body">
                         {dashboardData && <HardwareDoughnutChart data={dashboardData.machineDistribution} />}
-                    </Card.Body>
-                </Card>
-            </Col>
+                    </div>
+                </div>
 
-            {/* CARD 3: ACTIVE MACHINES */}
-            <Col md={4} className="mb-4">
-                <Card className="shadow-sm h-100">
-                    <Card.Header className="bg-white"><h5 className="mb-0">Active Machines Running</h5></Card.Header>
-                    <ListGroup variant="flush" style={{ overflowY: 'auto', maxHeight: '300px' }}>
-                        {dashboardData && dashboardData.activeMachines.length > 0 ? (
+                {/* Active Machines */}
+                <div className="machines-card">
+                    <div className="machines-card-header">
+                        <h5>
+                            <FaClock style={{ marginRight: '0.5rem' }} />
+                            Active Machines
+                        </h5>
+                        <span className="machines-count">
+                            {dashboardData?.activeMachines?.length || 0} Running
+                        </span>
+                    </div>
+                    <div className="machines-list">
+                        {dashboardData && dashboardData.activeMachines?.length > 0 ? (
                             dashboardData.activeMachines.map(machine => (
-                                <ListGroup.Item key={machine.hardwareId}>
-                                    <strong>{machine.name}</strong>
-                                    <small className="d-block text-muted">
-                                        Handling {machine.Jobcards.length} jobcard(s)
-                                    </small>
-                                </ListGroup.Item>
+                                <div key={machine.hardwareId} className="machine-item">
+                                    <div className="machine-status"></div>
+                                    <div className="machine-info">
+                                        <div className="machine-name">{machine.name}</div>
+                                        <div className="machine-jobs">
+                                            Processing {machine.Jobcards?.length || 0} jobcard(s)
+                                        </div>
+                                    </div>
+                                    <span className="machine-badge">Active</span>
+                                </div>
                             ))
                         ) : (
-                            <ListGroup.Item>No machines are currently active.</ListGroup.Item>
+                            <div className="machines-empty">
+                                <FaServer className="machines-empty-icon" />
+                                <p>No machines are currently active</p>
+                            </div>
                         )}
-                    </ListGroup>
-                </Card>
-            </Col>
+                    </div>
+                </div>
+            </div>
 
-            {/* --- BOTTOM ROW: BAR CHART WITH FILTERS --- */}
-            {/* This card now takes up the full width of the second row */}
-            <Col xs={12} className="mb-4">
-                <Card className="shadow-sm">
-                    <Card.Header className="d-flex justify-content-between align-items-center bg-white">
-                        <h5 className="mb-0">Jobcard Statistics</h5>
-                         <ButtonGroup size="sm">
-                            <Button 
-                                className={timeFilter === 1 ? 'btn-custom-primary' : 'btn-custom-secondary'} 
-                                onClick={() => setTimeFilter(1)}
-                            >
-                                Daily
-                            </Button>
-                            <Button 
-                                className={timeFilter === 7 ? 'btn-custom-primary' : 'btn-custom-secondary'} 
-                                onClick={() => setTimeFilter(7)}
-                            >
-                                Weekly
-                            </Button>
-                            <Button 
-                                className={timeFilter === 30 ? 'btn-custom-primary' : 'btn-custom-secondary'} 
-                                onClick={() => setTimeFilter(30)}
-                            >
-                                Monthly
-                            </Button>
-                        </ButtonGroup>
-                    </Card.Header>
-                    <Card.Body>
-                        {dashboardData && <JobcardBarChart data={dashboardData.dilutionStats} />}
-                    </Card.Body>
-                </Card>
-            </Col>
-        </Row>
+            {/* Jobcard Statistics (Full Width) */}
+            <div className="jobcard-stats-card">
+                <div className="jobcard-stats-header">
+                    <div className="jobcard-stats-title">
+                        <div className="jobcard-stats-icon">
+                            <FaChartBar />
+                        </div>
+                        <h5>Jobcard Statistics</h5>
+                    </div>
+                    <div className="time-filter-group">
+                        <button 
+                            className={`time-filter-btn ${timeFilter === 1 ? 'active' : ''}`}
+                            onClick={() => setTimeFilter(1)}
+                        >
+                            Daily
+                        </button>
+                        <button 
+                            className={`time-filter-btn ${timeFilter === 7 ? 'active' : ''}`}
+                            onClick={() => setTimeFilter(7)}
+                        >
+                            Weekly
+                        </button>
+                        <button 
+                            className={`time-filter-btn ${timeFilter === 30 ? 'active' : ''}`}
+                            onClick={() => setTimeFilter(30)}
+                        >
+                            Monthly
+                        </button>
+                    </div>
+                </div>
+                <div className="jobcard-stats-body">
+                    {dashboardData && <JobcardBarChart data={dashboardData.dilutionStats} />}
+                </div>
+            </div>
+        </div>
     );
 }
 

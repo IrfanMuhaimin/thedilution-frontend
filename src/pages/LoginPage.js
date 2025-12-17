@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Container, Row, Col, Form, Button, Alert, Spinner } from 'react-bootstrap';
-import './LoginPage.css'; // Import the new stylesheet
+import loginBackground from '../assets/login-background.jpg';
+import './LoginPage.css';
 
 function LoginPage() {
   const [username, setUsername] = useState('');
@@ -28,7 +29,11 @@ function LoginPage() {
       <Row className="g-0 min-vh-100">
         {/* Left Column: Image Background */}
         {/* This column is hidden on medium screens and below (d-none d-md-block) */}
-        <Col md={7} className="login-image-section d-none d-md-block"></Col>
+        <Col 
+          md={7} 
+          className="login-image-section d-none d-md-block"
+          style={{ backgroundImage: `url(${loginBackground})` }}
+        ></Col>
 
         {/* Right Column: Login Form */}
         <Col md={5} className="login-form-section d-flex align-items-center justify-content-center">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import { Navbar, Nav, Container, Button, NavDropdown } from 'react-bootstrap';
-import { FaBars, FaUserCircle } from 'react-icons/fa';
+import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
+import { FaBars, FaUser, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
 import { useAuth } from './context/AuthContext';
 
 // Import all page components
@@ -24,18 +24,29 @@ import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Footer from './components/Footer';
-// We no longer import SecurityOverlay here
 
 // Import global styles
 import './Sidebar.css';
 import './App.css';
 import './styles/main.scss';
+import './styles/GlobalPages.css';
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { user, logout } = useAuth();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+  // Get user initials for avatar
+  const getUserInitials = (username) => {
+    if (!username) return 'U';
+    return username
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
 
   if (!user) {
     return (
@@ -49,22 +60,46 @@ function App() {
     <div className="app-layout">
       <Sidebar isOpen={isSidebarOpen} />
       
-      <div className="content-wrapper" style={{ marginLeft: isSidebarOpen ? '250px' : '0' }}>
-        <Navbar expand="lg" className="app-navbar position-sticky top-0" style={{ zIndex: 1021 }}>
+      <div className="content-wrapper" style={{ marginLeft: isSidebarOpen ? '280px' : '0' }}>
+        <Navbar expand="lg" className="app-navbar position-sticky top-0" style={{ zIndex: 9998 }}>
           <Container fluid>
-            <Button variant="outline-light" onClick={toggleSidebar}><FaBars /></Button>
-            <Navbar.Brand as={Link} to="/" className="ms-3" style={{ fontWeight: 'bold' }}>
+            {/* Toggle Button */}
+            <button className="btn-toggle" onClick={toggleSidebar}>
+              <FaBars />
+            </button>
+            
+            {/* Brand */}
+            <Navbar.Brand as={Link} to="/">
               TheDilution
             </Navbar.Brand>
+            
+            {/* User Section */}
             <Nav className="ms-auto">
               <NavDropdown 
-                title={<span><FaUserCircle className="me-2" />Welcome, {user.username}</span>} 
+                title={
+                  <div className="user-info">
+                    <div className="user-avatar">
+                      {getUserInitials(user.username)}
+                    </div>
+                    <div className="user-details">
+                      <span className="user-name">{user.username}</span>
+                      <span className="user-role">{user.role}</span>
+                    </div>
+                    <FaChevronDown style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', marginLeft: '0.25rem' }} />
+                  </div>
+                } 
                 id="user-nav-dropdown"
                 align="end"
               >
-                <NavDropdown.Item as={Link} to="/profile">My Profile</NavDropdown.Item>
+                <NavDropdown.Item as={Link} to="/profile">
+                  <span className="dropdown-item-icon"><FaUser /></span>
+                  My Profile
+                </NavDropdown.Item>
                 <NavDropdown.Divider />
-                <NavDropdown.Item onClick={logout}>Logout</NavDropdown.Item>
+                <NavDropdown.Item onClick={logout} className="logout-item">
+                  <span className="dropdown-item-icon"><FaSignOutAlt /></span>
+                  Logout
+                </NavDropdown.Item>
               </NavDropdown>
             </Nav>
           </Container>

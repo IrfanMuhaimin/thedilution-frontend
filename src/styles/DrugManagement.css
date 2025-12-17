@@ -1,17 +1,165 @@
-/* Custom styles for tabs to match your theme */
+/* ============================================
+   DRUG MANAGEMENT & TABS - MODERN PREMIUM STYLES
+   ============================================ */
+
+/* === TAB NAVIGATION === */
+.drug-management-tabs {
+    border-bottom: 2px solid #e2e8f0 !important;
+    background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+    border-radius: 16px 16px 0 0;
+    padding: 0.5rem 0.5rem 0;
+    gap: 0.25rem;
+}
+
 .drug-management-tabs .nav-link {
-    color: #6c757d; /* Default secondary color */
-    border: 0;
-    border-bottom: 3px solid transparent;
+    color: #64748b;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: -2px;
+    border-radius: 12px 12px 0 0;
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+.drug-management-tabs .nav-link:hover {
+    color: #043873;
+    background: rgba(4, 56, 115, 0.04);
 }
 
 .drug-management-tabs .nav-link.active {
-    color: #0d6efd; /* Default primary color */
-    background-color: #fff;
-    border-color: #0d6efd;
-    font-weight: bold;
+    color: #043873 !important;
+    background-color: #ffffff !important;
+    border-bottom: 3px solid #043873 !important;
+    font-weight: 700;
 }
 
-.drug-management-tabs .tab-content {
-    padding-top: 1.5rem;
+.drug-management-tabs .nav-link.active::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    height: 3px;
+    background: linear-gradient(90deg, #FFE492 0%, #ffd966 100%);
+    border-radius: 2px 2px 0 0;
+}
+
+/* === TAB CONTENT === */
+.drug-management-tabs+.tab-content,
+.tab-content {
+    padding-top: 2rem;
+}
+
+/* === TAB PANE ANIMATION === */
+.tab-pane {
+    animation: fadeInTab 0.3s ease-out;
+}
+
+@keyframes fadeInTab {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === FORM INSIDE TABS === */
+.tab-pane .form-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tab-pane .form-control,
+.tab-pane .form-select {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    transition: all 0.25s ease;
+}
+
+.tab-pane .form-control:focus,
+.tab-pane .form-select:focus {
+    border-color: #043873;
+    box-shadow: 0 0 0 4px rgba(4, 56, 115, 0.1);
+}
+
+/* === TABLE INSIDE TABS === */
+.tab-pane .table {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.tab-pane .table thead {
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.tab-pane .table thead th {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.tab-pane .table tbody tr {
+    transition: all 0.15s ease;
+}
+
+.tab-pane .table tbody tr:hover {
+    background: rgba(4, 56, 115, 0.02);
+}
+
+.tab-pane .table tbody td {
+    padding: 1rem 1.25rem;
+    vertical-align: middle;
+}
+
+/* === BUTTON STYLES INSIDE TABS === */
+.tab-pane .btn-custom-primary {
+    background: linear-gradient(135deg, #043873 0%, #0a4f9e 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    color: #ffffff;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 15px rgba(4, 56, 115, 0.25);
+}
+
+.tab-pane .btn-custom-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(4, 56, 115, 0.35);
+}
+
+/* === ACCESS DENIED STATE === */
+.tab-pane .alert-warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 16px;
+    padding: 2rem;
+}
+
+.tab-pane .alert-warning .alert-heading {
+    color: #b45309;
+    font-weight: 700;
+}
+
+/* === VERIFICATION REQUIRED STATE === */
+.tab-pane h4.text-muted {
+    color: #94a3b8 !important;
+    font-weight: 500;
 }
