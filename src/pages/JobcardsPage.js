@@ -7,7 +7,7 @@ import SecurityOverlay from '../components/SecurityOverlay';
 import '../styles/DrugManagement.css'; 
 
 // --- DEVELOPMENT SWITCH: Set this to 'false' to disable the Face ID check ---
-const IS_FACE_ID_ENABLED = true;
+const IS_FACE_ID_ENABLED = false;
 
 function JobcardsPage() {
     const { user } = useAuth();

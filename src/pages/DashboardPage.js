@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Spinner } from 'react-bootstrap';
 import { 
-    FaTachometerAlt, FaUsers, FaServer, FaClipboardList, 
+    FaServer, 
     FaChartPie, FaCogs, FaCalendarAlt, FaExclamationTriangle,
-    FaArrowUp, FaArrowDown, FaCheckCircle, FaClock, FaChartBar
+    FaClock, FaChartBar
 } from 'react-icons/fa';
 import * as dashboardService from '../services/dashboardService';
 import RolePieChart from '../components/charts/RolePieChart';
