@@ -39,4 +39,4 @@ function RolePieChart({ data }) {
     return <Pie data={chartData} options={options} />;
 }
 
-export default RolePieChart;
+export default React.memo(RolePieChart);

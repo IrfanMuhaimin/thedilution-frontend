@@ -1,207 +1,203 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-    FaServer, 
-    FaChartPie, FaCogs, FaCalendarAlt, FaExclamationTriangle,
-    FaClock, FaChartBar
-} from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaCalendarAlt, FaExclamationTriangle, FaChartLine, FaCapsules, FaUsers, FaRobot, FaShieldAlt } from 'react-icons/fa';
+import { Spinner } from 'react-bootstrap';
+import { useAuth } from '../context/AuthContext';
 import * as dashboardService from '../services/dashboardService';
+
+import JobcardLineChart from '../components/charts/JobcardLineChart';
+import TopFormulationsBarChart from '../components/charts/TopFormulationsBarChart';
+import StockForecastAreaChart from '../components/charts/StockForecastAreaChart';
+import DemographicsScatterChart from '../components/charts/DemographicsScatterChart';
+import StatusPipelineDoughnut from '../components/charts/StatusPipelineDoughnut';
 import RolePieChart from '../components/charts/RolePieChart';
-import HardwareDoughnutChart from '../components/charts/HardwareDoughnutChart';
-import JobcardBarChart from '../components/charts/JobcardBarChart';
+
 import '../styles/Dashboard.css';
 
+// 1. Memoize the Card Wrapper so it doesn't flash
+const DashboardCard = React.memo(({ title, icon, children }) => (
+    <div className="db-card shadow-sm border-0 rounded-4">
+        <div className="db-card-header bg-white border-bottom py-3">
+            <div className="d-flex align-items-center fw-bold text-primary">
+                <span className="me-2 fs-5 text-warning">{icon}</span> {title}
+            </div>
+        </div>
+        <div className="db-card-body p-4">{children}</div>
+    </div>
+));
+
 function DashboardPage() {
-    const [dashboardData, setDashboardData] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
+    
+    // Use refs to hold data to prevent unnecessary state triggers during polling
+    const rawDataRef = useRef(null);
+    const rawAiDataRef = useRef([]);
+
+    const [data, setData] = useState(null);
+    const [aiData, setAiData] = useState([]);
+    
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [aiLoading, setAiLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    
     const [error, setError] = useState('');
     const [timeFilter, setTimeFilter] = useState(7);
 
-    const fetchData = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError('');
-            const data = await dashboardService.getDashboardData(timeFilter);
-            setDashboardData(data);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [timeFilter]);
-
+    // FETCH MAIN DATA
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        let isMounted = true;
 
-    // Format current date
-    const formatDate = () => {
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        return new Date().toLocaleDateString('en-US', options);
-    };
+        const fetchMainData = async () => {
+            if (!isInitialLoad) setIsRefreshing(true);
+            try {
+                const res = await dashboardService.getDashboardData(timeFilter);
+                if (isMounted) {
+                    // Only update state if data actually changed (prevents blinking)
+                    if (JSON.stringify(rawDataRef.current) !== JSON.stringify(res)) {
+                        rawDataRef.current = res;
+                        setData(res);
+                    }
+                    setError('');
+                }
+            } catch (err) { 
+                if (isMounted) setError(err.message); 
+            } finally { 
+                if (isMounted) {
+                    setIsInitialLoad(false);
+                    setIsRefreshing(false);
+                }
+            }
+        };
 
-    // Calculate stats from dashboard data
-    const getStats = () => {
-        if (!dashboardData) return [];
-        
-        const totalUsers = dashboardData.userDistribution?.reduce((acc, item) => acc + item.value, 0) || 0;
-        const totalMachines = dashboardData.machineDistribution?.reduce((acc, item) => acc + item.value, 0) || 0;
-        const activeMachines = dashboardData.activeMachines?.length || 0;
-        const totalJobcards = dashboardData.dilutionStats?.reduce((acc, item) => 
-            acc + (item.completed || 0) + (item.pending || 0), 0) || 0;
+        fetchMainData();
+        return () => { isMounted = false; };
+    }, [timeFilter]); // Only depends on timeFilter now
 
+    // FETCH AI DATA
+    useEffect(() => {
+        let isMounted = true;
 
-    };
+        const fetchAiData = async () => {
+            if (user.role === 'Doctor') {
+                setAiLoading(false);
+                return;
+            }
+            try {
+                const res = await dashboardService.getDashboardForecast();
+                if (isMounted) {
+                    if (JSON.stringify(rawAiDataRef.current) !== JSON.stringify(res)) {
+                        rawAiDataRef.current = res;
+                        setAiData(res);
+                    }
+                }
+            } catch (err) { 
+                console.error("AI Fetch Error", err); 
+            } finally { 
+                if (isMounted) setAiLoading(false); 
+            }
+        };
 
-    if (loading) {
+        fetchAiData();
+        return () => { isMounted = false; };
+    }, [user.role]);
+
+    const formatDate = () => new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Ensure we don't show the error screen if we already have data
+    if (isInitialLoad && !data) {
         return (
-            <div className="dashboard-page">
-                <div className="dashboard-loading">
-                    <div className="dashboard-spinner"></div>
-                    <span className="dashboard-loading-text">Loading dashboard data...</span>
-                </div>
+            <div className="dashboard-loading">
+                <Spinner animation="border" variant="primary" style={{width: '50px', height: '50px', borderWidth: '5px'}}/>
+                <span className="mt-3 fw-bold text-muted">Health is Our Priority...</span>
             </div>
         );
     }
+    
+    if (error && !data) return <div className="dashboard-error"><FaExclamationTriangle /> <span>{error}</span></div>;
 
-    if (error) {
-        return (
-            <div className="dashboard-page">
-                <div className="dashboard-error">
-                    <FaExclamationTriangle className="dashboard-error-icon" />
-                    <span>{error}</span>
+    const renderDoctorDashboard = () => (
+        <div className="db-grid">
+            <DashboardCard title="My Request vs Approval Pipeline" icon={<FaChartLine />}><JobcardLineChart data={data?.lineChartData} /></DashboardCard>
+            <DashboardCard title="My Top Prescriptions" icon={<FaCapsules />}><TopFormulationsBarChart data={data?.topFormulations} /></DashboardCard>
+            <DashboardCard title="Patient Demographics" icon={<FaUsers />}><DemographicsScatterChart data={data?.demographics} /></DashboardCard>
+            <DashboardCard title="Current Jobcard Status" icon={<FaRobot />}><StatusPipelineDoughnut data={data?.statusPipeline} /></DashboardCard>
+        </div>
+    );
+
+    const renderPharmacistDashboard = () => (
+        <div className="db-grid">
+            <DashboardCard title="Global Request vs Approval Pipeline" icon={<FaChartLine />}><JobcardLineChart data={data?.lineChartData} /></DashboardCard>
+            <DashboardCard title="AI Stock Depletion Forecast" icon={<FaExclamationTriangle />}>
+                {aiLoading ? <div className="text-center py-5"><Spinner animation="grow" variant="warning" /><p className="mt-3 text-muted small fw-bold">Analyzing inventory...</p></div> : <StockForecastAreaChart data={aiData} />}
+            </DashboardCard>
+            <DashboardCard title="Global Jobcard Pipeline" icon={<FaRobot />}><StatusPipelineDoughnut data={data?.statusPipeline} /></DashboardCard>
+            <DashboardCard title="Most Mixed Formulations" icon={<FaCapsules />}><TopFormulationsBarChart data={data?.topFormulations} /></DashboardCard>
+        </div>
+    );
+
+    const renderAdminDashboard = () => (
+        <div className="db-grid">
+            {/* ROW 1: System Workload and User Role Distribution */}
+            <DashboardCard title="System Workload (Jobcards)" icon={<FaChartLine />}>
+                <JobcardLineChart data={data?.lineChartData} />
+            </DashboardCard>
+
+            <DashboardCard title="Critical Stock Forecast" icon={<FaExclamationTriangle />}>
+                {aiLoading ? (
+                    <div className="d-flex flex-column justify-content-center align-items-center h-100 py-4">
+                        <Spinner animation="grow" variant="warning" />
+                        <span className="mt-3 text-muted fw-bold small">Analyzing inventory...</span>
+                    </div>
+                ) : (
+                    <StockForecastAreaChart data={aiData} />
+                )}
+            </DashboardCard>
+
+            {/* ROW 2: System Audit and AI Forecast */}
+            <DashboardCard title="System Audit & Security Feed" icon={<FaShieldAlt />}>
+                <div className="audit-feed">
+                    {data?.auditFeed?.map(log => (
+                        <div key={log.notificationId} className={`audit-item border-start border-4 border-${log.severity === 'danger' ? 'danger' : log.severity === 'warning' ? 'warning' : 'info'} p-2 mb-2 bg-light rounded-end`}>
+                            <div className="small fw-bold text-primary">{log.User?.username} <span className="text-muted fw-normal ms-2">{new Date(log.timestamp).toLocaleString()}</span></div>
+                            <div className="small mt-1 text-dark">{log.message}</div>
+                        </div>
+                    ))}
+                    {(!data?.auditFeed || data.auditFeed.length === 0) && <p className="text-muted text-center mt-4">No recent activity.</p>}
                 </div>
-            </div>
-        );
-    }
-
-    const stats = getStats();
+            </DashboardCard>
+            
+            <DashboardCard title="User Role Distribution" icon={<FaUsers />}>
+                <RolePieChart data={data?.userDistribution} />
+            </DashboardCard>
+            
+        </div>
+    );
 
     return (
         <div className="dashboard-page">
-            {/* Header */}
-            <div className="dashboard-header">
-                <div className="dashboard-header-content">
-                    <div className="dashboard-title-section">
-                        {/* <div className="dashboard-icon">
-                            <FaTachometerAlt />
-                        </div> */}
-                        <div>
-                            <h1 className="dashboard-title">Dashboard</h1>
-                            <p className="dashboard-subtitle">Welcome back! Here's what's happening today.</p>
-                        </div>
+            <div className="dashboard-header d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 className="fw-bold text-primary mb-1 d-flex align-items-center">
+                        Dashboard
+                        {isRefreshing && <Spinner animation="border" size="sm" variant="primary" className="ms-3" />}
+                    </h2>
+                    <p className="text-muted mb-0">Role: <span className="fw-bold text-dark">{user.role}</span> View</p>
+                </div>
+                <div className="d-flex align-items-center gap-3">
+                    <div className="time-filter-group bg-white border rounded-pill shadow-sm p-1">
+                        <button className={`btn btn-sm rounded-pill px-3 ${timeFilter === 7 ? 'btn-primary' : 'btn-light'}`} onClick={() => setTimeFilter(7)}>7 Days</button>
+                        <button className={`btn btn-sm rounded-pill px-3 ${timeFilter === 30 ? 'btn-primary' : 'btn-light'}`} onClick={() => setTimeFilter(30)}>30 Days</button>
                     </div>
-                    <div className="dashboard-date">
-                        <FaCalendarAlt className="dashboard-date-icon" />
-                        <span className="dashboard-date-text">{formatDate()}</span>
+                    <div className="dashboard-date bg-white border rounded-pill px-4 py-2 shadow-sm fw-bold text-primary">
+                        <FaCalendarAlt className="me-2 text-warning" /> {formatDate()}
                     </div>
                 </div>
             </div>
 
-            
-
-            {/* Charts Row */}
-            <div className="dashboard-charts">
-                {/* Role Distribution */}
-                <div className="chart-card">
-                    <div className="chart-card-header">
-                        <div className="chart-card-title">
-                            <div className="chart-card-title-icon">
-                                <FaChartPie />
-                            </div>
-                            <h5>User Distribution</h5>
-                        </div>
-                    </div>
-                    <div className="chart-card-body">
-                        {dashboardData && <RolePieChart data={dashboardData.userDistribution} />}
-                    </div>
-                </div>
-
-                {/* Hardware Distribution */}
-                <div className="chart-card">
-                    <div className="chart-card-header">
-                        <div className="chart-card-title">
-                            <div className="chart-card-title-icon">
-                                <FaCogs />
-                            </div>
-                            <h5>Hardware Status</h5>
-                        </div>
-                    </div>
-                    <div className="chart-card-body">
-                        {dashboardData && <HardwareDoughnutChart data={dashboardData.machineDistribution} />}
-                    </div>
-                </div>
-
-                {/* Active Machines */}
-                <div className="machines-card">
-                    <div className="machines-card-header">
-                        <h5>
-                            <FaClock style={{ marginRight: '0.5rem' }} />
-                            Active Machines
-                        </h5>
-                        <span className="machines-count">
-                            {dashboardData?.activeMachines?.length || 0} Running
-                        </span>
-                    </div>
-                    <div className="machines-list">
-                        {dashboardData && dashboardData.activeMachines?.length > 0 ? (
-                            dashboardData.activeMachines.map(machine => (
-                                <div key={machine.hardwareId} className="machine-item">
-                                    <div className="machine-status"></div>
-                                    <div className="machine-info">
-                                        <div className="machine-name">{machine.name}</div>
-                                        <div className="machine-jobs">
-                                            Processing {machine.Jobcards?.length || 0} jobcard(s)
-                                        </div>
-                                    </div>
-                                    <span className="machine-badge">Active</span>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="machines-empty">
-                                <FaServer className="machines-empty-icon" />
-                                <p>No machines are currently active</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Jobcard Statistics (Full Width) */}
-            <div className="jobcard-stats-card">
-                <div className="jobcard-stats-header">
-                    <div className="jobcard-stats-title">
-                        <div className="jobcard-stats-icon">
-                            <FaChartBar />
-                        </div>
-                        <h5>Jobcard Statistics</h5>
-                    </div>
-                    <div className="time-filter-group">
-                        <button 
-                            className={`time-filter-btn ${timeFilter === 1 ? 'active' : ''}`}
-                            onClick={() => setTimeFilter(1)}
-                        >
-                            Daily
-                        </button>
-                        <button 
-                            className={`time-filter-btn ${timeFilter === 7 ? 'active' : ''}`}
-                            onClick={() => setTimeFilter(7)}
-                        >
-                            Weekly
-                        </button>
-                        <button 
-                            className={`time-filter-btn ${timeFilter === 30 ? 'active' : ''}`}
-                            onClick={() => setTimeFilter(30)}
-                        >
-                            Monthly
-                        </button>
-                    </div>
-                </div>
-                <div className="jobcard-stats-body">
-                    {dashboardData && <JobcardBarChart data={dashboardData.dilutionStats} />}
-                </div>
-            </div>
+            {user.role === 'Doctor' && renderDoctorDashboard()}
+            {user.role === 'Pharmacist' && renderPharmacistDashboard()}
+            {user.role === 'Admin' && renderAdminDashboard()}
         </div>
     );
 }
 
-export default DashboardPage;
+export default React.memo(DashboardPage);

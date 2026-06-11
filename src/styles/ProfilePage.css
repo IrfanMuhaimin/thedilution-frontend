@@ -87,3 +87,59 @@ hr.my-3 {
         font-size: 2.5rem;
     }
 }
+
+.profile-avatar-large {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #043873 0%, #0a4f9e 100%);
+    color: white;
+    font-size: 4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: visible; /* To allow badge to show */
+}
+
+.profile-avatar-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid #fff;
+}
+
+.avatar-edit-badge {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 40px;
+    height: 40px;
+    background: #FFE492;
+    color: #043873;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+
+.avatar-edit-badge:hover {
+    transform: scale(1.1);
+    background: #ffd966;
+}
+
+.letter-spacing-1 {
+    letter-spacing: 1px;
+}
+
+@media (min-width: 992px) {
+    .border-end-lg {
+        border-right: 1px solid #dee2e6 !important;
+    }
+}

@@ -60,9 +60,7 @@ export const deleteUser = async (userId) => {
         method: 'DELETE',
         headers: getAuthHeader()
     });
-    if (!response.ok) {
-        throw new Error('Failed to delete user');
-    }
+    if (!response.ok) throw new Error('Failed to archive user');
     return response.json();
 };
 
@@ -88,6 +86,41 @@ export const updateMyProfile = async (profileData) => {
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to update profile');
+    }
+    return response.json();
+};
+
+/// GET archived users list
+export const getArchivedUsers = async () => {
+    const response = await fetch(`${API_URL}/archived/list`, {
+        method: 'GET',
+        headers: getAuthHeader()
+    });
+    if (!response.ok) throw new Error('Failed to fetch archived users');
+    return response.json();
+};
+
+// RESTORE a user from archive
+export const restoreUser = async (userId) => {
+    const response = await fetch(`${API_URL}/${userId}/restore`, {
+        method: 'PUT',
+        headers: getAuthHeader(),
+        body: JSON.stringify({}) // Empty body for PUT
+    });
+    if (!response.ok) throw new Error('Failed to restore user');
+    return response.json();
+};
+
+// Permanent Delete
+export const permanentDeleteUser = async (userId) => {
+    const response = await fetch(`${API_URL}/${userId}/permanent`, {
+        method: 'DELETE',
+        headers: getAuthHeader()
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to permanently delete user');
     }
     return response.json();
 };

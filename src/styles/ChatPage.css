@@ -1,0 +1,285 @@
+/* src/styles/ChatPage.css */
+
+.chat-page-container {
+    height: calc(100vh - 110px); /* Fill screen below navbar and margins */
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid rgba(4, 56, 115, 0.08);
+    display: flex;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* === LEFT SIDEBAR (CONTACTS) === */
+.chat-sidebar {
+    width: 320px;
+    border-right: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    background: #f8fafc;
+}
+
+.chat-sidebar-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+.chat-search-input {
+    border-radius: 50px !important;
+    padding-left: 2.5rem !important;
+    background-color: #f1f5f9 !important;
+    border: none !important;
+}
+
+.chat-search-input:focus {
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(4, 56, 115, 0.15) !important;
+}
+
+.contacts-list {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.contact-item:hover {
+    background: #f1f5f9;
+}
+
+.contact-item.active {
+    background: linear-gradient(90deg, rgba(4, 56, 115, 0.06) 0%, transparent 100%);
+    border-left: 4px solid #043873;
+}
+
+.contact-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.online-indicator {
+    width: 12px;
+    height: 12px;
+    background: #20c997;
+    border-radius: 50%;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.contact-info {
+    margin-left: 0.75rem;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.contact-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.contact-name {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.9375rem;
+}
+
+.contact-role {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.contact-last-msg {
+    font-size: 0.8rem;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+
+/* === RIGHT SIDE (ACTIVE CHAT WINDOW) === */
+.chat-window {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+}
+
+/* Header */
+.chat-window-header {
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    height: 70px;
+}
+
+/* Message Bubble Container */
+.chat-messages-container {
+    flex-grow: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Chat Bubbles */
+.chat-bubble {
+    max-width: 65%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 0.9375rem;
+    position: relative;
+    word-wrap: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.chat-bubble.sent {
+    background: #043873;
+    color: #ffffff;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-bubble.received {
+    background: #f1f5f9;
+    color: #1e293b;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+.chat-bubble-time {
+    font-size: 0.65rem;
+    display: block;
+    margin-top: 4px;
+    text-align: right;
+    opacity: 0.7;
+}
+
+/* Bottom Input Area */
+.chat-input-area {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+.chat-input-field {
+    border-radius: 50px !important;
+    padding: 0.625rem 1.25rem !important;
+    border: 1px solid #cbd5e1 !important;
+    resize: none;
+    font-size: 0.9375rem;
+}
+
+.chat-input-field:focus {
+    border-color: #043873 !important;
+    box-shadow: 0 0 0 3px rgba(4, 56, 115, 0.15) !important;
+}
+
+/* === LANDING/EMPTY STATE === */
+.chat-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+    background: #f8fafc;
+}
+
+.chat-empty-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(4, 56, 115, 0.05);
+    color: #043873;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .chat-sidebar {
+        width: 80px;
+    }
+    .chat-sidebar-header, .contact-info, .contact-meta {
+        display: none;
+    }
+    .contact-item {
+        justify-content: center;
+        padding: 0.85rem;
+    }
+}
+
+/* Custom Red Notification Count Badge */
+.badge-notif-count {
+    background-color: #ef4444; /* Alert Red */
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 50px;
+    min-width: 20px;
+    text-align: center;
+    display: inline-block;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+    line-height: 1.2;
+}
+
+.floating-reference-bar {
+    border-left: 5px solid #043873;
+    animation: slideInUp 0.3s ease-out;
+}
+
+/* Reference Message Bubble */
+.chat-bubble.reference-bubble {
+    border-radius: 12px !important;
+    max-width: 50%;
+}
+
+.chat-bubble.sent.reference-bubble {
+    background: #11345d !important; /* Slightly darker shade of blue for reference card */
+    border: 1px solid rgba(255, 228, 146, 0.3);
+}
+
+.chat-bubble.received.reference-bubble {
+    background: #e2e8f0 !important; /* Soft gray for received reference card */
+    border: 1px solid #cbd5e1;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

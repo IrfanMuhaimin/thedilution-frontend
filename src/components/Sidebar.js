@@ -18,30 +18,42 @@ function Sidebar({ isOpen }) {
   const { user } = useAuth();
   const sidebarClass = isOpen ? "sidebar" : "sidebar collapsed";
 
+  // 1. EXACT ROLE-BASED MAPPING RULES
   const navLinks = [
-    { path: "/", icon: <FaTachometerAlt />, text: "Dashboard", roles: ['Admin', 'Pharmacist', 'Doctor'], section: 'main' },
-    { path: "/users", icon: <FaUsers />, text: "User Management", roles: ['Admin'], section: 'management' },
-    { path: "/face-id", icon: <FaUserShield />, text: "Face ID Management", roles: ['Admin'], section: 'management' },
-    { path: "/hardware", icon: <FaServer />, text: "Hardware", roles: ['Admin', 'Pharmacist'], section: 'system' },
-    { path: "/inventory", icon: <FaBoxOpen />, text: "Inventory", roles: ['Admin', 'Pharmacist'], section: 'operations' },
-    { path: "/drugs", icon: <FaCapsules />, text: "Drug Management", roles: ['Admin', 'Pharmacist', 'Doctor'], section: 'operations' },
-    { path: "/jobcards", icon: <FaClipboardList />, text: "Jobcards", roles: ['Admin', 'Pharmacist', 'Doctor'], section: 'operations' },
-    { path: "/wise-paas", icon: <FaCog />, text: "Wise-Paas", roles: ['Admin', 'Pharmacist'], section: 'system' },
-    { path: "/notifications", icon: <FaBell />, text: "Notifications", roles: ['Admin', 'Pharmacist', 'Doctor'], section: 'system' },
-    { path: "/reports", icon: <FaChartBar />, text: "Reports", roles: ['Admin', 'Pharmacist'], section: 'analytics' },
+    // Main Dashboard (All see this)
+    { path: "/", icon: <FaTachometerAlt />, text: "Dashboard", roles: ['Admin', 'Pharmacist', 'Doctor'] },
+    
+    // Admin Exclusive
+    { path: "/users", icon: <FaUsers />, text: "User Management", roles: ['Admin'] },
+    { path: "/face-id", icon: <FaUserShield />, text: "Face ID Management", roles: ['Admin'] },
+    { path: "/hardware", icon: <FaServer />, text: "Hardware", roles: ['Admin'] },
+    
+    // Inventory (Admin and Pharmacist)
+    { path: "/inventory", icon: <FaBoxOpen />, text: "Inventory", roles: ['Admin', 'Pharmacist'] },
+    
+    // Drug Management (Pharmacist only)
+    { path: "/drugs", icon: <FaCapsules />, text: "Drug Management", roles: ['Pharmacist'] },
+    
+    // Jobcards (Pharmacist and Doctor)
+    { path: "/jobcards", icon: <FaClipboardList />, text: "Jobcards", roles: ['Pharmacist', 'Doctor'] },
+    
+    // Wise-PaaS (Admin only)
+    { path: "/wise-paas", icon: <FaCog />, text: "Wise-Paas", roles: ['Admin'] },
+    
+    // Notifications (All see this)
+    { path: "/notifications", icon: <FaBell />, text: "Notifications", roles: [] },
+    
+    // Reports (Admin and Pharmacist)
+    { path: "/reports", icon: <FaChartBar />, text: "Reports", roles: ['Admin', 'Pharmacist'] },
   ];
 
-  // Filter links by user role
   const filteredLinks = navLinks.filter(link => link.roles.includes(user.role));
 
   return (
     <div className={sidebarClass}>
-      {/* Brand Header */}
       <div className="sidebar-brand">
         <div className="sidebar-brand-content">
-          <div className="sidebar-brand-icon">
-            <FaFlask />
-          </div>
+          <div className="sidebar-brand-icon"><FaFlask /></div>
           <div className="sidebar-brand-text">
             <span className="sidebar-brand-name">TheDilution</span>
             <span className="sidebar-brand-tagline">Pharmacy System</span>
@@ -49,7 +61,6 @@ function Sidebar({ isOpen }) {
         </div>
       </div>
 
-      {/* Navigation */}
       <Nav className="flex-column">
         {filteredLinks.map((link) => (
           <Nav.Link 
@@ -64,7 +75,6 @@ function Sidebar({ isOpen }) {
         ))}
       </Nav>
 
-      {/* Footer with logos */}
       <div className="sidebar-footer">
         <div className="sidebar-footer-divider"></div>
         <div className="logo-row">

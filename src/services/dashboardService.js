@@ -21,3 +21,12 @@ throw new Error('Failed to fetch dashboard data');
 }
 return response.json();
 };
+
+export const getDashboardForecast = async () => {
+    const response = await fetch(`${API_URL}/forecast`, {
+        method: 'GET',
+        headers: getAuthHeader()
+    });
+    if (!response.ok) throw new Error('Failed to fetch AI forecast');
+    return response.json();
+};

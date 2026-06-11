@@ -80,3 +80,16 @@ export const deleteReport = async (reportId) => {
     }
     return response.json();
 };
+
+export const getArchivedReports = async () => {
+    const response = await fetch(`${API_URL}/reports/archived/list`, { method: 'GET', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to fetch'); return response.json();
+};
+export const restoreReport = async (id) => {
+    const response = await fetch(`${API_URL}/reports/${id}/restore`, { method: 'PUT', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to restore'); return response.json();
+};
+export const permanentDeleteReport = async (id) => {
+    const response = await fetch(`${API_URL}/reports/${id}/permanent`, { method: 'DELETE', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to delete'); return response.json();
+};

@@ -149,3 +149,35 @@ export const deleteDilution = async (id) => {
     if (!response.ok) throw new Error('Failed to delete dilution');
     return response.json();
 };
+
+export const getDilutionById = async (id) => {
+    const response = await fetch(`${BASE_URL}/dilutions/${id}`, { headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to fetch dilution details');
+    return response.json();
+};
+
+export const getArchivedFormulas = async () => {
+    const response = await fetch(`${BASE_URL}/formulas/archived/list`, { headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to fetch'); return response.json();
+};
+export const restoreFormula = async (id) => {
+    const response = await fetch(`${BASE_URL}/formulas/${id}/restore`, { method: 'PUT', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to restore'); return response.json();
+};
+export const permanentDeleteFormula = async (id) => {
+    const response = await fetch(`${BASE_URL}/formulas/${id}/permanent`, { method: 'DELETE', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to delete'); return response.json();
+};
+
+export const getArchivedDilutions = async () => {
+    const response = await fetch(`${BASE_URL}/dilutions/archived/list`, { headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to fetch'); return response.json();
+};
+export const restoreDilution = async (id) => {
+    const response = await fetch(`${BASE_URL}/dilutions/${id}/restore`, { method: 'PUT', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to restore'); return response.json();
+};
+export const permanentDeleteDilution = async (id) => {
+    const response = await fetch(`${BASE_URL}/dilutions/${id}/permanent`, { method: 'DELETE', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to delete'); return response.json();
+};

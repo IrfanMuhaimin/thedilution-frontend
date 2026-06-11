@@ -39,3 +39,17 @@ export const markNotificationAsRead = async (notificationId) => {
     }
     return response.json();
 };
+
+// Add to the bottom of src/services/notificationService.js
+export const broadcastAnnouncement = async (announcementData) => {
+    const response = await fetch(`${API_URL}/broadcast`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify(announcementData)
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to broadcast announcement');
+    }
+    return response.json();
+};

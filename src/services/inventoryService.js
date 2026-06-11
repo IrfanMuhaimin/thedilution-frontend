@@ -110,3 +110,16 @@ export const deleteStockBatch = async (stockId) => {
     }
     return response.json();
 };
+
+export const getArchivedInventory = async () => {
+    const response = await fetch(`${INVENTORY_API_URL}/archived/list`, { method: 'GET', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to fetch'); return response.json();
+};
+export const restoreInventoryMaster = async (id) => {
+    const response = await fetch(`${INVENTORY_API_URL}/${id}/restore`, { method: 'PUT', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to restore'); return response.json();
+};
+export const permanentDeleteInventoryMaster = async (id) => {
+    const response = await fetch(`${INVENTORY_API_URL}/${id}/permanent`, { method: 'DELETE', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to delete'); return response.json();
+};

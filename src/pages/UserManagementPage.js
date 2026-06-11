@@ -1,23 +1,28 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Alert, Spinner } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrash, FaSearch, FaUsers, FaUserCheck, FaUserTimes, FaBuilding, FaUserShield, FaUserMd, FaUserCog, FaExclamationTriangle } from 'react-icons/fa';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { 
+    FaPlus, FaEdit, FaSearch, FaUsers, FaUserCheck, 
+    FaUserTimes, FaBuilding, FaUserShield, FaUserMd, 
+    FaUserCog, FaExclamationTriangle, FaArchive 
+} from 'react-icons/fa';
 import { format } from 'date-fns';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import * as userService from '../services/userService';
 import UserModal from '../components/UserModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import '../styles/UserManagement.css';
 
 function UserManagementPage() {
-    // State for the full user list
+    const { user: loggedInUser } = useAuth(); 
+    const navigate = useNavigate();
+    
     const [users, setUsers] = useState([]);
-    
-    // State for filtering & searching
-    const [roleFilter, setRoleFilter] = useState('All');
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filteredUsers, setFilteredUsers] = useState([]); 
-    
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    
+    const [roleFilter, setRoleFilter] = useState('All');
+    const [searchTerm, setSearchTerm] = useState('');
+    
     const [showUserModal, setShowUserModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
@@ -25,55 +30,45 @@ function UserManagementPage() {
 
     const fetchUsers = useCallback(async () => {
         try {
-            setLoading(true);
-            setError('');
+            setLoading(true); setError('');
             const data = await userService.getAllUsers();
             setUsers(data);
-        } catch (err) { setError(err.message); } 
+        } catch (err) { setError("Failed to load users."); } 
         finally { setLoading(false); }
     }, []);
 
-    useEffect(() => {
-        fetchUsers();
-    }, [fetchUsers]);
+    useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-    // --- LOGIC REORDERED: Search is now applied BEFORE the role filter ---
-    useEffect(() => {
+    const filteredUsers = useMemo(() => {
         let result = users;
-
-        // 1. Apply search term filter first
         if (searchTerm) {
-            result = result.filter(user =>
-                user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                user.department.toLowerCase().includes(searchTerm.toLowerCase())
+            result = result.filter(u =>
+                u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                u.department.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
-
-        // 2. Apply role filter on the result of the search
         if (roleFilter !== 'All') {
-            result = result.filter(user => user.role === roleFilter);
+            result = result.filter(u => u.role === roleFilter);
         }
-
-        setFilteredUsers(result);
+        return result;
     }, [users, roleFilter, searchTerm]);
 
-    // Calculate stats
-    const totalUsers = users.length;
-    const activeUsers = users.filter(u => u.status).length;
-    const inactiveUsers = totalUsers - activeUsers;
+    const stats = useMemo(() => {
+        return {
+            total: users.length,
+            active: users.filter(u => u.status === 'active' || u.status === true).length,
+            inactive: users.filter(u => u.status !== 'active' && u.status !== true).length
+        };
+    }, [users]);
 
-    // --- All handler functions remain the same ---
     const handleAdd = () => { setCurrentUser(null); setShowUserModal(true); };
     const handleEdit = (user) => { setCurrentUser(user); setShowUserModal(true); };
     const handleDelete = (user) => { setUserToDelete(user); setShowDeleteModal(true); };
 
     const handleSaveUser = async (userData) => {
         try {
-            if (currentUser && currentUser.userId) {
-                await userService.updateUser(currentUser.userId, userData);
-            } else {
-                await userService.addUser(userData);
-            }
+            if (currentUser && currentUser.userId) await userService.updateUser(currentUser.userId, userData);
+            else await userService.addUser(userData);
             setShowUserModal(false);
             fetchUsers();
         } catch (err) { alert(err.message); }
@@ -89,19 +84,10 @@ function UserManagementPage() {
         } catch (err) { setError(err.message); }
     };
 
-    // Get initials for avatar
-    const getInitials = (name) => {
-        return name
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .substring(0, 2)
-            .toUpperCase();
-    };
+    const getInitials = (name) => name?.charAt(0).toUpperCase() || 'U';
 
-    // Get role badge class
     const getRoleBadgeClass = (role) => {
-        switch (role.toLowerCase()) {
+        switch (role?.toLowerCase()) {
             case 'admin': return 'admin';
             case 'pharmacist': return 'pharmacist';
             case 'doctor': return 'doctor';
@@ -109,9 +95,8 @@ function UserManagementPage() {
         }
     };
 
-    // Get role icon
     const getRoleIcon = (role) => {
-        switch (role.toLowerCase()) {
+        switch (role?.toLowerCase()) {
             case 'admin': return <FaUserShield />;
             case 'pharmacist': return <FaUserCog />;
             case 'doctor': return <FaUserMd />;
@@ -122,202 +107,127 @@ function UserManagementPage() {
     return (
         <div className="user-management-page">
             <div className="um-card">
-                {/* Header */}
                 <div className="um-header">
                     <div className="um-header-content">
-                        <div className="um-header-icon">
-                            <FaUsers />
-                        </div>
+                        <div className="um-header-icon"><FaUsers /></div>
                         <div>
                             <h1 className="um-title">User Management</h1>
-                            <p className="um-subtitle">Manage system users and their permissions</p>
+                            <p className="um-subtitle">Administrative Control Panel</p>
                         </div>
                     </div>
                     <button className="um-btn-add" onClick={handleAdd}>
-                        <span className="um-btn-add-icon"><FaPlus /></span>
-                        Add New User
+                        <span className="um-btn-add-icon"><FaPlus /></span> Add New User
                     </button>
                 </div>
 
-                {/* Body */}
                 <div className="um-body">
-                    {/* Stats Bar */}
                     <div className="um-stats-bar">
-                        <div className="um-stat-item">
-                            <div className="um-stat-icon total">
-                                <FaUsers />
-                            </div>
-                            <div className="um-stat-content">
-                                <span className="um-stat-value">{totalUsers}</span>
-                                <span className="um-stat-label">Total Users</span>
-                            </div>
-                        </div>
-                        <div className="um-stat-item">
-                            <div className="um-stat-icon active">
-                                <FaUserCheck />
-                            </div>
-                            <div className="um-stat-content">
-                                <span className="um-stat-value">{activeUsers}</span>
-                                <span className="um-stat-label">Active</span>
-                            </div>
-                        </div>
-                        <div className="um-stat-item">
-                            <div className="um-stat-icon inactive">
-                                <FaUserTimes />
-                            </div>
-                            <div className="um-stat-content">
-                                <span className="um-stat-value">{inactiveUsers}</span>
-                                <span className="um-stat-label">Inactive</span>
-                            </div>
-                        </div>
+                        <div className="um-stat-item"><div className="um-stat-icon total"><FaUsers /></div><div className="um-stat-content"><span className="um-stat-value">{stats.total}</span><span className="um-stat-label">Total Users</span></div></div>
+                        <div className="um-stat-item"><div className="um-stat-icon active"><FaUserCheck /></div><div className="um-stat-content"><span className="um-stat-value">{stats.active}</span><span className="um-stat-label">Active</span></div></div>
+                        <div className="um-stat-item"><div className="um-stat-icon inactive"><FaUserTimes /></div><div className="um-stat-content"><span className="um-stat-value">{stats.inactive}</span><span className="um-stat-label">Inactive</span></div></div>
                     </div>
 
-                    {/* Filters */}
                     <div className="um-filters">
                         <div className="um-filter-group">
                             <label className="um-filter-label">Search Users</label>
                             <div className="um-search-wrapper">
-                                <input
-                                    type="text"
-                                    className="um-search-input"
-                                    placeholder="Search by name or department..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                                <input type="text" className="um-search-input" placeholder="Name or Department..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                 <FaSearch className="um-search-icon" />
                             </div>
                         </div>
                         <div className="um-filter-group">
                             <label className="um-filter-label">Filter by Role</label>
-                            <select 
-                                className="um-select"
-                                value={roleFilter} 
-                                onChange={(e) => setRoleFilter(e.target.value)}
-                            >
-                                <option value="All">All Roles</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Pharmacist">Pharmacist</option>
-                                <option value="Doctor">Doctor</option>
+                            <select className="um-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+                                <option value="All">All Roles</option><option value="Admin">Admin</option><option value="Pharmacist">Pharmacist</option><option value="Doctor">Doctor</option>
                             </select>
                         </div>
                     </div>
                     
-                    {/* Error Alert */}
-                    {error && (
-                        <div className="um-alert">
-                            <FaExclamationTriangle className="um-alert-icon" />
-                            <span>{error}</span>
-                        </div>
-                    )}
+                    {error && <div className="um-alert"><FaExclamationTriangle className="um-alert-icon" /><span>{error}</span></div>}
 
-                    {/* Table */}
                     {loading ? (
-                        <div className="um-loading">
-                            <div className="um-spinner"></div>
-                            <span className="um-loading-text">Loading users...</span>
-                        </div>
+                        <div className="um-loading"><div className="um-spinner"></div><span className="um-loading-text">Synchronizing database...</span></div>
                     ) : filteredUsers.length === 0 ? (
-                        <div className="um-empty">
-                            <div className="um-empty-icon">
-                                <FaUsers />
-                            </div>
-                            <h3 className="um-empty-title">No users found</h3>
-                            <p className="um-empty-description">
-                                {searchTerm || roleFilter !== 'All' 
-                                    ? 'Try adjusting your search or filter criteria'
-                                    : 'Get started by adding your first user'}
-                            </p>
-                        </div>
+                        <div className="um-empty"><div className="um-empty-icon"><FaUsers /></div><h3 className="um-empty-title">No matching users found</h3><p className="um-empty-description">Try adjusting your filters or search terms.</p></div>
                     ) : (
                         <div className="um-table-container">
                             <table className="um-table">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
-                                        <th>User</th>
+                                        <th className="ps-4">User Profile</th>
                                         <th>Role</th>
                                         <th>Department</th>
                                         <th>Status</th>
-                                        <th>Activated</th>
-                                        <th>Actions</th>
+                                        <th>Joined</th>
+                                        <th className="text-center pe-4">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredUsers.map(user => (
-                                        <tr key={user.userId}>
-                                            <td>
-                                                <span className="um-user-id">#{user.userId}</span>
-                                            </td>
-                                            <td>
-                                                <div className="um-user-info">
-                                                    <div className="um-avatar">
-                                                        {getInitials(user.username)}
+                                    {filteredUsers.map(userItem => {
+                                        const isActive = userItem.status === 'active' || userItem.status === true;
+                                        return (
+                                            <tr key={userItem.userId}>
+                                                <td className="ps-4">
+                                                    <div className="um-user-info">
+                                                        <div className="um-avatar">
+                                                            {userItem.profilePicture ? (
+                                                                <img src={userItem.profilePicture} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                                                            ) : getInitials(userItem.username)}
+                                                        </div>
+                                                        <div className="d-flex flex-column">
+                                                            <span className="um-username">{userItem.username}</span>
+                                                            <span className="small text-muted">ID: #{userItem.userId}</span>
+                                                        </div>
                                                     </div>
-                                                    <span className="um-username">{user.username}</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className={`um-role-badge ${getRoleBadgeClass(user.role)}`}>
-                                                    {getRoleIcon(user.role)}
-                                                    {user.role}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div className="um-department">
-                                                    <FaBuilding className="um-department-icon" />
-                                                    {user.department}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span className={`um-status-badge ${user.status ? 'active' : 'inactive'}`}>
-                                                    <span className="um-status-dot"></span>
-                                                    {user.status ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span className="um-date">
-                                                    {user.active ? format(new Date(user.active), 'dd MMM yyyy') : 'N/A'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div className="um-actions">
-                                                    <button 
-                                                        className="um-btn-action um-btn-edit" 
-                                                        onClick={() => handleEdit(user)}
-                                                        title="Edit user"
-                                                    >
-                                                        <FaEdit />
-                                                    </button>
-                                                    <button 
-                                                        className="um-btn-action um-btn-delete" 
-                                                        onClick={() => handleDelete(user)}
-                                                        title="Delete user"
-                                                    >
-                                                        <FaTrash />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                <td><span className={`um-role-badge ${getRoleBadgeClass(userItem.role)}`}>{getRoleIcon(userItem.role)} {userItem.role}</span></td>
+                                                <td><div className="um-department"><FaBuilding className="um-department-icon" /> {userItem.department}</div></td>
+                                                <td>
+                                                    {/* --- NEW: Custom Pill Status Logic --- */}
+                                                    <span className={`custom-status-badge ${isActive ? 'bg-status-active' : 'bg-status-inactive'}`}>
+                                                        {isActive ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </td>
+                                                <td><span className="um-date">{userItem.active ? format(new Date(userItem.active), 'dd MMM yyyy') : 'N/A'}</span></td>
+                                                <td className="text-center pe-4">
+                                                    {userItem.userId === loggedInUser.userId ? (
+                                                        <span className="current-user-label"><FaUserCheck className="me-2" /> Your Current Account</span>
+                                                    ) : (
+                                                        <div className="d-flex justify-content-center gap-2">
+                                                            <button className="btn-table-action" onClick={() => handleEdit(userItem)} title="Edit user info">
+                                                                <FaEdit />
+                                                            </button>
+                                                            <button className="btn-table-action" onClick={() => handleDelete(userItem)} title="Archive this user">
+                                                                <FaArchive />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
+                        </div>
+                    )}
+
+                    {!loading && (
+                        <div className="d-flex justify-content-center mt-4 mb-2">
+                            <button className="btn btn-light shadow-sm" style={{ borderRadius: '50px', padding: '10px 30px', border: '1px dashed #cbd5e1' }} onClick={() => navigate('/users/archive')}>
+                                <FaArchive className="me-2 text-muted" /> <span className="fw-bold text-muted">View Archived Users</span>
+                            </button>
                         </div>
                     )}
                 </div>
             </div>
 
-            <UserModal 
-                show={showUserModal}
-                handleClose={() => setShowUserModal(false)}
-                handleSave={handleSaveUser}
-                user={currentUser}
-            />
-
+            <UserModal show={showUserModal} handleClose={() => setShowUserModal(false)} handleSave={handleSaveUser} user={currentUser} />
             <DeleteConfirmationModal 
-                show={showDeleteModal}
-                handleClose={() => setShowDeleteModal(false)}
-                handleConfirm={handleConfirmDelete}
-                userName={userToDelete?.username}
+                show={showDeleteModal} handleClose={() => setShowDeleteModal(false)} handleConfirm={handleConfirmDelete} 
+                itemName={userToDelete?.username} 
+                entityName="User" 
+                actionType="Archive" 
+                isProcessing={false} 
             />
         </div>
     );

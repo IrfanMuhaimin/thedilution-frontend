@@ -1,12 +1,17 @@
 /* ============================================
-   APP LAYOUT - MODERN PREMIUM STYLES
+   APP LAYOUT & HEADER REVISION
    ============================================ */
 
-/* === LAYOUT STRUCTURE === */
+:root {
+    --primary-blue: #043873;
+    --accent-gold: #FFE492;
+    --danger-red: #ef4444;
+}
+
 .app-layout {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: #f8fafc;
 }
 
 .content-wrapper {
@@ -14,312 +19,390 @@
   flex-direction: column;
   flex-grow: 1;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 100vh;
 }
 
 .main-content-area {
   flex-grow: 1;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  position: relative;
-  z-index: 1;
 }
 
-/* ============================================
-   NAVBAR / HEADER - MODERN STYLES
-   ============================================ */
-
+/* === NAVBAR PREMIUM STYLING === */
 .navbar.app-navbar {
-  background: linear-gradient(135deg, #043873 0%, #0a4f9e 100%);
-  border-bottom: none;
-  box-shadow: 0 4px 20px rgba(4, 56, 115, 0.2);
-  padding: 0.75rem 1.5rem;
-  position: relative;
-  overflow: visible;
-  /* Changed from hidden to allow dropdown to display */
+    background: var(--primary-blue);
+    height: 70px;
+    padding: 0 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-bottom: 2px solid rgba(255, 228, 146, 0.1);
+    z-index: 1000;
 }
 
-/* Decorative gradient overlay */
-.navbar.app-navbar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg,
-      rgba(255, 228, 146, 0.03) 0%,
-      transparent 30%,
-      transparent 70%,
-      rgba(255, 228, 146, 0.03) 100%);
-  pointer-events: none;
+.navbar-brand-premium {
+    color: white !important;
+    font-weight: 700;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    letter-spacing: -0.5px;
 }
 
-/* Subtle bottom accent line */
-.navbar.app-navbar::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg,
-      transparent 0%,
-      rgba(255, 228, 146, 0.4) 50%,
-      transparent 100%);
+.brand-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--accent-gold);
+    border-radius: 50%;
+    margin-right: 12px;
+    box-shadow: 0 0 12px var(--accent-gold);
 }
 
 /* Toggle Button */
-.navbar.app-navbar .btn-toggle {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.125rem;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
+.btn-toggle-custom {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
 }
 
-.navbar.app-navbar .btn-toggle:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.25);
-  transform: scale(1.05);
+.btn-toggle-custom:hover {
+    background: rgba(255, 255, 255, 0.2);
 }
 
-.navbar.app-navbar .btn-toggle:active {
-  transform: scale(0.98);
+/* Grouping the notification and profile */
+.header-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-/* Brand */
-.navbar.app-navbar .navbar-brand {
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 1.375rem;
-  letter-spacing: -0.02em;
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  text-decoration: none;
-  margin-left: 1rem;
-  position: relative;
+/* === NOTIFICATION BELL REVISION === */
+.notification-anchor {
+    position: relative;
+    text-decoration: none !important;
 }
 
-.navbar.app-navbar .navbar-brand::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  background: #FFE492;
-  border-radius: 50%;
-  box-shadow: 0 0 10px rgba(255, 228, 146, 0.5);
+.notif-icon-circle {
+    width: 42px;
+    height: 42px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s;
 }
 
-.navbar.app-navbar .navbar-brand:hover {
-  color: #ffffff;
+.notification-anchor:hover .notif-icon-circle {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    border-color: var(--accent-gold);
 }
 
-/* User Dropdown Section */
-.navbar.app-navbar .user-section {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.notif-badge-pill {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--danger-red);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 50px;
+    border: 3px solid var(--primary-blue); /* This creates the separation effect */
+    min-width: 20px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-/* User Avatar & Info */
-.navbar.app-navbar .user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 0.5rem 1rem 0.5rem 0.625rem;
-  border-radius: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  cursor: pointer;
-  transition: all 0.2s ease;
+/* === USER PROFILE PILL REVISION === */
+.user-profile-pill {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 5px 15px 5px 6px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
 }
 
-.navbar.app-navbar .user-info:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.2);
+.user-profile-pill:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--accent-gold);
 }
 
-.navbar.app-navbar .user-avatar {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #FFE492 0%, #ffd966 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #043873;
-  font-weight: 700;
-  font-size: 0.875rem;
-  box-shadow: 0 2px 8px rgba(255, 228, 146, 0.3);
+.user-info-text {
+    display: flex;
+    flex-direction: column;
+    margin: 0 12px;
+    text-align: left;
 }
 
-.navbar.app-navbar .user-details {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+.user-nav-name {
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.2;
 }
 
-.navbar.app-navbar .user-name {
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 0.9375rem;
+.user-nav-role {
+    color: var(--accent-gold);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    opacity: 0.9;
 }
 
-.navbar.app-navbar .user-role {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-/* Dropdown Toggle (Bootstrap override) */
-.navbar.app-navbar .nav-link,
-.navbar.app-navbar .dropdown-toggle {
-  color: #ffffff !important;
-  padding: 0;
-  background: transparent !important;
-  border: none;
-}
-
-.navbar.app-navbar .dropdown-toggle::after {
-  display: none;
-}
-
-/* Dropdown Menu */
-.navbar.app-navbar .dropdown,
-.navbar.app-navbar .nav-item.dropdown {
-  position: relative;
-  z-index: 9999;
-}
-
-.navbar.app-navbar .dropdown-menu {
-  background: #ffffff;
-  border: 1px solid rgba(4, 56, 115, 0.08);
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(4, 56, 115, 0.15);
-  padding: 0.5rem;
-  margin-top: 0.75rem;
-  min-width: 200px;
-  animation: dropdownFade 0.2s ease;
-  z-index: 99999 !important;
-  position: absolute !important;
-}
-
-/* Ensure dropdown is visible when shown */
-.navbar.app-navbar .dropdown-menu.show {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
-@keyframes dropdownFade {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.navbar.app-navbar .dropdown-menu::before {
-  content: '';
-  position: absolute;
-  top: -6px;
-  right: 20px;
-  width: 12px;
-  height: 12px;
-  background: #ffffff;
-  border-left: 1px solid rgba(4, 56, 115, 0.08);
-  border-top: 1px solid rgba(4, 56, 115, 0.08);
-  transform: rotate(45deg);
-}
-
-.navbar.app-navbar .dropdown-item {
-  color: #475569;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  padding: 0.625rem 1rem;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  transition: all 0.15s ease;
-}
-
-.navbar.app-navbar .dropdown-item:hover {
-  background: linear-gradient(135deg, rgba(4, 56, 115, 0.06) 0%, rgba(4, 56, 115, 0.03) 100%);
-  color: #043873;
-}
-
-.navbar.app-navbar .dropdown-item.logout-item {
-  color: #ef4444;
-}
-
-.navbar.app-navbar .dropdown-item.logout-item:hover {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.04) 100%);
-  color: #dc2626;
-}
-
-.navbar.app-navbar .dropdown-divider {
-  border-color: rgba(4, 56, 115, 0.08);
-  margin: 0.375rem 0;
-}
-
-/* Dropdown Item Icons */
-.navbar.app-navbar .dropdown-item-icon {
-  width: 20px;
-  display: flex;
-  justify-content: center;
-  opacity: 0.7;
-}
-
-/* === RESPONSIVE === */
-@media (max-width: 768px) {
-  .navbar.app-navbar {
-    padding: 0.5rem 1rem;
-  }
-
-  .navbar.app-navbar .navbar-brand {
-    font-size: 1.125rem;
-    margin-left: 0.5rem;
-  }
-
-  .navbar.app-navbar .user-details {
-    display: none;
-  }
-
-  .navbar.app-navbar .user-info {
-    padding: 0.375rem;
+.navbar-avatar-img {
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-  }
+    object-fit: cover;
+    border: 2px solid var(--accent-gold);
+}
+
+.user-avatar-fallback {
+    width: 36px;
+    height: 36px;
+    background: var(--accent-gold);
+    color: var(--primary-blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.nav-dropdown-caret {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.7rem;
+}
+
+/* Remove default Bootstrap dropdown arrow */
+.dropdown-toggle::after {
+    display: none !important;
+}
+
+/* Premium Dropdown Menu */
+.dropdown-menu {
+    border: none !important;
+    border-radius: 15px !important;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
+    padding: 10px !important;
+    margin-top: 15px !important;
+    background: white;
+}
+
+.dropdown-item {
+    border-radius: 10px !important;
+    padding: 10px 15px !important;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f1f5f9 !important;
+    color: var(--primary-blue) !important;
+}
+
+.logout-item {
+    color: var(--danger-red) !important;
+}
+
+/* Avatar Preview Logic */
+.profile-avatar-large {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-blue) 0%, #0a4f9e 100%);
+    color: white;
+    font-size: 4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.profile-avatar-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.profile-avatar-setup {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: 4px solid #ffffff;
+    outline: 2px solid #043873; /* Primary Blue Outline */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* CRITICAL: This crops the image to the circle */
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.profile-avatar-setup:hover {
+    outline-color: #FFE492; /* Glow gold on hover */
+    transform: scale(1.02);
+}
+
+.profile-img-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* CRITICAL: This centers and crops the photo perfectly */
+    display: block;
+}
+
+.avatar-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.current-user-label {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(4, 56, 115, 0.05);
+    color: #043873;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px dashed #043873;
+    white-space: nowrap;
+    opacity: 0.8;
+}
+
+.current-user-label svg {
+    color: #10b981; 
+}
+
+.btn-custom-logout {
+    transition: all 0.3s ease !important;
+}
+
+.btn-custom-logout:hover {
+    background: #990000 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(115, 4, 4, 0.295) !important;
 }
 
 /* ============================================
-   CRITICAL: DROPDOWN VISIBILITY OVERRIDE
-   Ensures dropdown menu appears above all content
+   STANDARDIZED PREMIUM BADGES & PILLS
    ============================================ */
-#user-nav-dropdown+.dropdown-menu,
-.navbar .dropdown-menu,
-.nav .dropdown-menu {
-  z-index: 999999 !important;
-  position: absolute !important;
-  display: none;
+
+/* 1. Universal Status Pill (Jobcards, Users, Inventory Status) */
+.custom-status-badge {
+    padding: 6px 18px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    text-transform: capitalize;
 }
 
-#user-nav-dropdown+.dropdown-menu.show,
-.navbar .dropdown-menu.show,
-.nav .dropdown-menu.show {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  transform: none !important;
+/* Status Colors matching your screenshot */
+.bg-status-approved { background-color: #043873; } /* Dark Blue */
+.bg-status-completed, .bg-status-available, .bg-status-active { background-color: #20c997; } /* Bright Green */
+.bg-status-pending, .bg-status-unknown { background-color: #8692a6; } /* Slate Grey */
+.bg-status-processing { background-color: #0dcaf0; } /* Light Blue */
+.bg-status-rejected, .bg-status-outofstock, .bg-status-inactive { background-color: #ef4444; } /* Red */
+.bg-status-runningout { background-color: #f59e0b; color: #1e293b; } /* Yellow */
+
+/* 2. Standardized Hardware & Port Pill */
+.badge-hardware-port {
+    background: rgba(4, 56, 115, 0.08);
+    color: #043873;
+    border: 1px solid rgba(4, 56, 115, 0.2);
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-block;
+    letter-spacing: 0.5px;
 }
+
+/* 3. Standardized Ingredient Tag */
+.badge-ingredient {
+    background: #f8fafc;
+    color: #475569;
+    border: 1px dashed #cbd5e1;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+/* ============================================
+   STANDARDIZED ACTION BUTTONS (Edit/Archive/View)
+   ============================================ */
+.btn-table-action {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: none;
+    border-radius: 10px; /* Gives the soft square look */
+    background-color: #f1f5f9; /* Light slate/gray background */
+    color: #043873; /* Dark blue icon */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 1.1rem;
+}
+
+.btn-table-action:hover {
+    background-color: #043873;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(4, 56, 115, 0.25);
+}
+
+.btn-table-action:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.entity-name-dark-blue {
+    color: #043873 !important; /* Your precise dark blue */
+    font-weight: 700 !important; /* Extra bold to make it stand out */
+    letter-spacing: 0.3px;
+    font-size: 0.95rem;
+}
+
+/* === CLINICAL EMERGENCY LEVEL COLORS === */
+.text-emergency-5 { color: #750000 !important; font-weight: 750; font-size: 1.1rem; } /* Dark Red (Critical) */
+.text-emergency-4 { color: #ff7300 !important; font-weight: 750; font-size: 1.1rem; } /* Orange */
+.text-emergency-3 { color: #c7a94e !important; font-weight: 750; font-size: 1.1rem; } /* Yellow */
+.text-emergency-2 { color: #0041cc !important; font-weight: 750; font-size: 1.1rem; } /* Light Blue */
+.text-emergency-1 { color: #01cc0b !important; font-weight: 750; font-size: 1.1rem; } /* Gray */

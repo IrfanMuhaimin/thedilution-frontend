@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
+import * as hardwareService from '../services/hardwareService';
 
 function AddInventoryMasterModal({ show, handleClose, handleSave }) {
     const { user } = useAuth();
     const [formData, setFormData] = useState({});
+    const [hardwareList, setHardwareList] = useState([]);
 
     useEffect(() => {
-        // Reset form when modal is shown
         if (show) {
+            // Fetch available hardware for the dropdown
+            hardwareService.getAllHardware().then(data => setHardwareList(data));
+
             setFormData({
                 userId: user.userId,
                 name: '',
                 unit: 'pcs',
+                hardwareId: '', // New field
+                hardwarePort: '',
                 initialStock: {
                     quantity: 1,
                     supplier: '',
@@ -39,6 +45,7 @@ function AddInventoryMasterModal({ show, handleClose, handleSave }) {
     const onSave = () => {
         const dataToSave = {
             ...formData,
+            hardwareId: parseInt(formData.hardwareId, 10), // Ensure integer
             initialStock: {
                 ...formData.initialStock,
                 quantity: parseInt(formData.initialStock.quantity, 10),
@@ -53,10 +60,39 @@ function AddInventoryMasterModal({ show, handleClose, handleSave }) {
             <Modal.Header closeButton><Modal.Title>Add New Inventory Master</Modal.Title></Modal.Header>
             <Modal.Body>
                 <Form>
-                    <h5>Master Details</h5>
+                    <h5>Master & Hardware Mapping</h5>
                     <Row>
-                        <Col md={8}><Form.Group className="mb-3"><Form.Label>Item Name</Form.Label><Form.Control type="text" name="name" value={formData.name || ''} onChange={handleChange} /></Form.Group></Col>
-                        <Col md={4}><Form.Group className="mb-3"><Form.Label>Unit</Form.Label><Form.Select name="unit" value={formData.unit || ''} onChange={handleChange}><option>pcs</option><option>box</option><option>bottle</option><option>mL</option></Form.Select></Form.Group></Col>
+                        <Col md={12}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Item Name</Form.Label>
+                                <Form.Control type="text" name="name" value={formData.name || ''} onChange={handleChange} placeholder="e.g., Glucose Solution" />
+                            </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Assigned Hardware</Form.Label>
+                                <Form.Select name="hardwareId" value={formData.hardwareId} onChange={handleChange} required>
+                                    <option value="">Select Hardware...</option>
+                                    {hardwareList.map(hw => (
+                                        <option key={hw.hardwareId} value={hw.hardwareId}>{hw.name}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
+                        <Col md={3}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Port</Form.Label>
+                                <Form.Control type="text" name="hardwarePort" value={formData.hardwarePort || ''} onChange={handleChange} placeholder="e.g. P1" />
+                            </Form.Group>
+                        </Col>
+                        <Col md={3}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Unit</Form.Label>
+                                <Form.Select name="unit" value={formData.unit || ''} onChange={handleChange}>
+                                    <option>pcs</option><option>box</option><option>bottle</option><option>mL</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
                     </Row>
                     <hr />
                     <h5>Initial Stock Batch</h5>
@@ -70,7 +106,7 @@ function AddInventoryMasterModal({ show, handleClose, handleSave }) {
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={handleClose}>Close</Button>
-                <Button className="btn-custom-primary" onClick={onSave}>Save Item</Button>
+                <Button className="btn-custom-primary" onClick={onSave} disabled={!formData.hardwareId}>Save Item</Button>
             </Modal.Footer>
         </Modal>
     );

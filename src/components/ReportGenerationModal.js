@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
-
-// Import all necessary services to fetch items for the dropdowns
 import * as jobcardService from '../services/jobcardService';
 import * as inventoryService from '../services/inventoryService';
-import * as hardwareService from '../services/hardwareService';
 import * as consumptionService from '../services/consumptionService';
+import { FaFileMedical, FaCogs } from 'react-icons/fa';
 
 function ReportGenerationModal({ show, handleClose, handleGenerate }) {
     const { user } = useAuth();
@@ -18,111 +16,61 @@ function ReportGenerationModal({ show, handleClose, handleGenerate }) {
 
     useEffect(() => {
         const fetchItems = async () => {
-            if (!reportType) {
-                setItems([]);
-                return;
-            }
-            setLoading(true);
-            setError('');
+            if (!reportType) { setItems([]); return; }
+            setLoading(true); setError('');
             try {
                 let data = [];
-                switch (reportType) {
-                    case 'Jobcard':
-                        data = await jobcardService.getAllJobcards();
-                        break;
-                    case 'Inventory':
-                        data = await inventoryService.getAllInventory();
-                        break;
-                    case 'Hardware':
-                        data = await hardwareService.getAllHardware();
-                        break;
-                    case 'Consumption':
-                        data = await consumptionService.getAllConsumptions();
-                        break;
-                    default:
-                        break;
-                }
+                if (reportType === 'Jobcard') data = await jobcardService.getAllJobcards();
+                else if (reportType === 'Inventory') data = await inventoryService.getAllInventory();
+                else if (reportType === 'Consumption') data = await consumptionService.getAllConsumptions();
                 setItems(data);
-            } catch (err) {
-                setError(`Failed to fetch ${reportType.toLowerCase()} items.`);
-            } finally {
-                setLoading(false);
-            }
+            } catch (err) { setError(`Failed to fetch ${reportType.toLowerCase()} data.`); } 
+            finally { setLoading(false); }
         };
-
         fetchItems();
     }, [reportType]);
 
     const onGenerate = () => {
-        if (!reportType || !selectedId) {
-            setError('Both report type and a specific item must be selected.');
-            return;
-        }
-        const reportData = {
-            type: reportType,
-            id: parseInt(selectedId, 10),
-            userId: user.userId
-        };
-        handleGenerate(reportData);
+        if (!reportType || !selectedId) return setError('Selection required.');
+        handleGenerate({ type: reportType, id: parseInt(selectedId, 10), userId: user.userId });
     };
 
-    const renderItemOption = (item) => {
-        switch (reportType) {
-            case 'Jobcard':
-                return `ID ${item.jobcardId} - ${item.Dilution?.name || 'N/A'}`;
-            case 'Inventory':
-                return `ID ${item.inventoryId} - ${item.name}`;
-            case 'Hardware':
-                return `ID ${item.hardwareId} - ${item.name}`;
-            case 'Consumption':
-                return `ID ${item.consumptionId} - ${item.Inventory?.name || 'N/A'} on ${new Date(item.consumptionDate).toLocaleDateString()}`;
-            default:
-                return '';
-        }
+    const renderOption = (item) => {
+        if (reportType === 'Jobcard') return `Jobcard #${item.jobcardId} - ${item.Dilution?.name || 'Manual'}`;
+        if (reportType === 'Inventory') return `Item #${item.inventoryId} - ${item.name}`;
+        if (reportType === 'Consumption') return `Log #${item.consumptionId} - ${item.Inventory?.name} (${new Date(item.consumptionDate).toLocaleDateString()})`;
     };
-     const getItemId = (item) => {
-        switch (reportType) {
-            case 'Jobcard': return item.jobcardId;
-            case 'Inventory': return item.inventoryId;
-            case 'Hardware': return item.hardwareId;
-            case 'Consumption': return item.consumptionId;
-            default: return null;
-        }
-    };
+
+    const getId = (item) => item.jobcardId || item.inventoryId || item.consumptionId;
 
     return (
-        <Modal show={show} onHide={handleClose} size="lg">
-            <Modal.Header closeButton>
-                <Modal.Title>Generate New Report</Modal.Title>
+        <Modal show={show} onHide={handleClose} size="lg" centered className="um-modal">
+            <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, #043873 0%, #0a4f9e 100%)', color: 'white' }}>
+                <Modal.Title><FaFileMedical className="me-2 text-warning"/> Generate Clinical Report</Modal.Title>
             </Modal.Header>
-            <Modal.Body>
+            <Modal.Body className="p-4 bg-light">
                 {error && <Alert variant="danger">{error}</Alert>}
                 <Form>
                     <Row>
                         <Col md={12}>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Report Type</Form.Label>
-                                <Form.Select value={reportType} onChange={(e) => { setReportType(e.target.value); setSelectedId(''); }}>
-                                    <option value="">Select a type...</option>
-                                    <option value="Jobcard">Jobcard</option>
-                                    <option value="Inventory">Inventory</option>
-                                    <option value="Hardware">Hardware</option>
-                                    <option value="Consumption">Consumption</option>
+                            <Form.Group className="mb-4">
+                                <Form.Label className="small fw-bold text-primary">REPORT CATEGORY</Form.Label>
+                                <Form.Select value={reportType} onChange={(e) => { setReportType(e.target.value); setSelectedId(''); }} className="shadow-sm border-0 py-2">
+                                    <option value="">Select Audit Type...</option>
+                                    <option value="Jobcard">Medication Execution Audit (Jobcard)</option>
+                                    <option value="Inventory">Inventory FEFO Audit</option>
+                                    <option value="Consumption">Material Traceability Log</option>
                                 </Form.Select>
                             </Form.Group>
                         </Col>
                         {reportType && (
                             <Col md={12}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Select Item to Report On</Form.Label>
-                                    {loading ? <div className="text-center"><Spinner animation="border" size="sm" /></div> : (
-                                        <Form.Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} disabled={!items.length}>
-                                            <option value="">Select an item...</option>
-                                            {items.map(item => (
-                                                <option key={getItemId(item)} value={getItemId(item)}>
-                                                    {renderItemOption(item)}
-                                                </option>
-                                            ))}
+                                    <Form.Label className="small fw-bold text-primary">SELECT TARGET RECORD</Form.Label>
+                                    {loading ? <Spinner animation="border" size="sm" className="ms-3 text-primary" /> : (
+                                        <Form.Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} disabled={!items.length} className="shadow-sm border-0 py-2">
+                                            <option value="">Choose record...</option>
+                                            {items.map(item => <option key={getId(item)} value={getId(item)}>{renderOption(item)}</option>)}
                                         </Form.Select>
                                     )}
                                 </Form.Group>
@@ -131,10 +79,10 @@ function ReportGenerationModal({ show, handleClose, handleGenerate }) {
                     </Row>
                 </Form>
             </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={handleClose}>Close</Button>
-                <Button className="btn-custom-primary" onClick={onGenerate} disabled={loading || !selectedId}>
-                    Generate Report
+            <Modal.Footer className="bg-white border-0">
+                <Button variant="outline-secondary" className="rounded-pill px-4" onClick={handleClose}>Cancel</Button>
+                <Button className="btn-custom-primary rounded-pill px-4 shadow-sm" onClick={onGenerate} disabled={loading || !selectedId}>
+                    <FaCogs className="me-2"/> Build Report
                 </Button>
             </Modal.Footer>
         </Modal>

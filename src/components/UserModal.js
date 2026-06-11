@@ -1,24 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col, Alert } from 'react-bootstrap';
-import { FaUser, FaLock, FaUserTag, FaBuilding, FaExclamationTriangle, FaSave, FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Modal, Button, Form, Row, Col, Alert, InputGroup } from 'react-bootstrap';
+import { 
+    FaUser, FaLock, FaUserTag, FaBuilding, 
+    FaExclamationTriangle, FaSave, FaTimes, FaCheckCircle, FaTimesCircle, FaEyeSlash, FaEye 
+} from 'react-icons/fa';
+import { validatePassword } from '../utils/passwordValidator';
 import '../styles/UserManagement.css';
 
 function UserModal({ show, handleClose, handleSave, user }) {
     const [formData, setFormData] = useState({});
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const isEditMode = !!user?.userId;
 
+    // Password validation logic
+    const passwordChecks = useMemo(() => validatePassword(formData.password || ''), [formData.password]);
+
+    // 1. SYNC LOGIC: Convert string 'active' to boolean for the switch
     useEffect(() => {
         setError(''); 
         if (user) {
-            setFormData(user);
+            setFormData({
+                ...user,
+                status: user.status === 'active', // 'active' becomes true, others become false
+                password: '' // Don't pre-fill password in edit mode
+            });
         } else {
             setFormData({
                 username: '',
                 password: '',
                 role: 'Pharmacist',
                 department: '',
-                status: true,
+                status: true, // Default new user to active
             });
         }
     }, [user, show]);
@@ -33,54 +46,58 @@ function UserModal({ show, handleClose, handleSave, user }) {
 
     const validateForm = () => {
         if (!formData.username || !formData.department) {
-            setError('Username and Department are required fields.');
+            setError('Username and Department are required.');
             return false;
         }
-        if (!isEditMode && !formData.password) {
-            setError('Password is required for new users.');
-            return false;
+        
+        // Only validate password requirements for NEW users, 
+        // or if an Admin is explicitly typing a NEW password during edit.
+        if (!isEditMode || formData.password) {
+            if (!passwordChecks.isValid) {
+                setError('Password does not meet security requirements.');
+                return false;
+            }
         }
+        
         setError('');
         return true;
     };
 
     const onSave = () => {
-        if (!validateForm()) {
-            return;
+        if (!validateForm()) return;
+
+        // 2. TRANSLATE BACK: Convert boolean back to string for MySQL
+        const dataToSave = { 
+            ...formData,
+            status: formData.status ? 'active' : 'inactive'
+        };
+
+        // Remove password field if it's empty during an edit
+        if (isEditMode && !dataToSave.password) {
+            delete dataToSave.password;
         }
-        const dataToSave = { ...formData };
-        if (dataToSave.active) {
-            dataToSave.active = new Date(dataToSave.active).toISOString();
-        } else {
-            dataToSave.active = new Date().toISOString();
-        }
+
         handleSave(dataToSave);
     };
+
+    const Requirement = ({ met, text }) => (
+        <div className={`small ${met ? 'text-success' : 'text-muted'} d-flex align-items-center mb-1`}>
+            {met ? <FaCheckCircle className="me-2"/> : <FaTimesCircle className="me-2" style={{opacity: 0.5}}/>}
+            {text}
+        </div>
+    );
 
     return (
         <Modal show={show} onHide={handleClose} size="lg" className="um-modal" centered>
             <Modal.Header closeButton>
                 <Modal.Title>
-                    {isEditMode ? (
-                        <>
-                            <FaUser className="me-2" style={{ opacity: 0.8 }} />
-                            Edit User
-                        </>
-                    ) : (
-                        <>
-                            <FaUser className="me-2" style={{ opacity: 0.8 }} />
-                            Add New User
-                        </>
-                    )}
+                    <FaUser className="me-2" style={{ opacity: 0.8 }} />
+                    {isEditMode ? `Edit User: ${user.username}` : 'Add New User'}
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {error && (
-                    <Alert variant="danger" className="d-flex align-items-center gap-2" style={{ 
-                        borderRadius: '12px',
-                        border: 'none',
-                        background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%)'
-                    }}>
+                    <Alert variant="danger" className="d-flex align-items-center gap-2 rounded-3 border-0 shadow-sm">
                         <FaExclamationTriangle />
                         {error}
                     </Alert>
@@ -89,49 +106,20 @@ function UserModal({ show, handleClose, handleSave, user }) {
                     <Row>
                         <Col md={6}>
                             <Form.Group className="mb-4">
-                                <Form.Label>
-                                    <FaUser className="me-2" style={{ opacity: 0.5 }} />
-                                    Username
-                                </Form.Label>
+                                <Form.Label className="small fw-bold text-uppercase"><FaUser className="me-2" />Username</Form.Label>
                                 <Form.Control 
                                     type="text" 
                                     name="username" 
                                     placeholder="Enter username"
-                                    required 
                                     value={formData.username || ''} 
                                     onChange={handleChange} 
                                 />
                             </Form.Group>
                         </Col>
-                        {!isEditMode && (
-                            <Col md={6}>
-                                <Form.Group className="mb-4">
-                                    <Form.Label>
-                                        <FaLock className="me-2" style={{ opacity: 0.5 }} />
-                                        Password
-                                    </Form.Label>
-                                    <Form.Control 
-                                        type="password" 
-                                        name="password" 
-                                        placeholder="Enter password"
-                                        required 
-                                        value={formData.password || ''} 
-                                        onChange={handleChange} 
-                                    />
-                                </Form.Group>
-                            </Col>
-                        )}
                         <Col md={6}>
                             <Form.Group className="mb-4">
-                                <Form.Label>
-                                    <FaUserTag className="me-2" style={{ opacity: 0.5 }} />
-                                    Role
-                                </Form.Label>
-                                <Form.Select 
-                                    name="role" 
-                                    value={formData.role || ''} 
-                                    onChange={handleChange}
-                                >
+                                <Form.Label className="small fw-bold text-uppercase"><FaUserTag className="me-2" />Role</Form.Label>
+                                <Form.Select name="role" value={formData.role || ''} onChange={handleChange}>
                                     <option value="Admin">Admin</option>
                                     <option value="Pharmacist">Pharmacist</option>
                                     <option value="Doctor">Doctor</option>
@@ -140,79 +128,78 @@ function UserModal({ show, handleClose, handleSave, user }) {
                         </Col>
                         <Col md={6}>
                             <Form.Group className="mb-4">
-                                <Form.Label>
-                                    <FaBuilding className="me-2" style={{ opacity: 0.5 }} />
-                                    Department
-                                </Form.Label>
+                                <Form.Label className="small fw-bold text-uppercase"><FaBuilding className="me-2" />Department</Form.Label>
                                 <Form.Control 
                                     type="text" 
                                     name="department" 
-                                    placeholder="Enter department"
-                                    required 
+                                    placeholder="e.g. Pharmacy"
                                     value={formData.department || ''} 
                                     onChange={handleChange} 
                                 />
                             </Form.Group>
                         </Col>
+                        <Col md={6}>
+                            <Form.Group className="mb-4">
+                                <Form.Label className="small fw-bold text-uppercase">
+                                    <FaLock className="me-2" /> 
+                                    {isEditMode ? 'New Password (Optional)' : 'Initial Password'}
+                                </Form.Label>
+                                <InputGroup>
+                                    <Form.Control 
+                                        type={showPassword ? "text" : "password"} // State-driven type
+                                        name="password" 
+                                        placeholder={isEditMode ? "Leave blank to keep current" : "Enter password"}
+                                        value={formData.password || ''} 
+                                        onChange={handleChange} 
+                                        className="border-end-0"
+                                    />
+                                    <InputGroup.Text 
+                                        onClick={() => setShowPassword(!showPassword)} 
+                                        style={{ cursor: 'pointer', background: '#ffffff', borderLeft: 'none' }} 
+                                        className="text-muted"
+                                    >
+                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                    </InputGroup.Text>
+                                </InputGroup>
+                                {(formData.password || !isEditMode) && (
+                                    <div className="mt-2 p-2 bg-light rounded border" style={{ fontSize: '0.75rem' }}>
+                                        <Requirement met={passwordChecks.hasLength} text="8+ Characters" />
+                                        <Requirement met={passwordChecks.hasUpper} text="Uppercase & Lowercase" />
+                                        <Requirement met={passwordChecks.hasNumber} text="At least one number" />
+                                    </div>
+                                )}
+                            </Form.Group>
+                        </Col>
+
                         <Col md={12}>
                             <Form.Group className="mb-3">
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '1rem',
-                                    padding: '1rem 1.25rem',
-                                    background: formData.status 
-                                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%)'
-                                        : 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.04) 100%)',
-                                    borderRadius: '12px',
-                                    border: formData.status 
-                                        ? '1px solid rgba(16, 185, 129, 0.2)'
-                                        : '1px solid rgba(239, 68, 68, 0.2)',
-                                    transition: 'all 0.25s ease'
-                                }}>
+                                <div className={`p-3 rounded-3 border transition-all ${formData.status ? 'bg-success-subtle border-success' : 'bg-light border-secondary'}`}>
                                     <Form.Check
                                         type="switch"
                                         id="status-switch"
                                         name="status"
+                                        label={formData.status ? "User Account is ACTIVE" : "User Account is INACTIVE"}
                                         checked={formData.status || false}
                                         onChange={handleChange}
-                                        style={{ 
-                                            transform: 'scale(1.2)', 
-                                            marginRight: '0.5rem' 
-                                        }}
+                                        className="fw-bold"
                                     />
-                                    <div>
-                                        <div style={{ 
-                                            fontWeight: 600, 
-                                            color: formData.status ? '#10b981' : '#64748b',
-                                            fontSize: '0.9375rem'
-                                        }}>
-                                            {formData.status ? 'User is Active' : 'User is Inactive'}
-                                        </div>
-                                        <div style={{ 
-                                            fontSize: '0.8125rem', 
-                                            color: '#94a3b8',
-                                            marginTop: '0.125rem'
-                                        }}>
-                                            {formData.status 
-                                                ? 'This user can access the system'
-                                                : 'This user cannot access the system'}
-                                        </div>
-                                    </div>
+                                    <p className="small text-muted mb-0 ms-4">
+                                        {formData.status 
+                                            ? "The user will be able to log in to the system immediately." 
+                                            : "The user's access will be revoked until reactivated."}
+                                    </p>
                                 </div>
                             </Form.Group>
                         </Col>
                     </Row>
                 </Form>
             </Modal.Body>
-            <Modal.Footer>
-                <Button className="um-btn-cancel" onClick={handleClose}>
-                    <FaTimes className="me-2" />
-                    Cancel
+            <Modal.Footer className="bg-light">
+                <Button variant="outline-secondary" className="px-4 rounded-pill" onClick={handleClose}>
+                    <FaTimes className="me-2" /> Cancel
                 </Button>
-                <Button className="um-btn-save" onClick={onSave}>
-                    <FaSave className="me-2" />
-                    Save Changes
+                <Button className="btn-custom-primary px-4 rounded-pill" onClick={onSave}>
+                    <FaSave className="me-2" /> {isEditMode ? 'Update User' : 'Create User'}
                 </Button>
             </Modal.Footer>
         </Modal>

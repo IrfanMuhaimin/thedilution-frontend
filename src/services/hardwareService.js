@@ -68,3 +68,16 @@ export const deleteHardware = async (hardwareId) => {
     }
     return response.json();
 };
+
+export const getArchivedHardware = async () => {
+    const response = await fetch(`${API_URL}/archived/list`, { method: 'GET', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to fetch'); return response.json();
+};
+export const restoreHardware = async (id) => {
+    const response = await fetch(`${API_URL}/${id}/restore`, { method: 'PUT', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to restore'); return response.json();
+};
+export const permanentDeleteHardware = async (id) => {
+    const response = await fetch(`${API_URL}/${id}/permanent`, { method: 'DELETE', headers: getAuthHeader() });
+    if (!response.ok) throw new Error('Failed to delete'); return response.json();
+};
