@@ -4,8 +4,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   FaTachometerAlt, FaUsers, FaCapsules, FaBoxOpen, 
-  FaCog, FaBell, FaChartBar, FaClipboardList, FaServer,
-  FaUserShield, FaFlask, FaTimes // NEW: Imported FaTimes for the close button
+  FaCog, FaChartBar, FaClipboardList, FaServer,
+  FaUserShield, FaFlask, FaTimes
 } from 'react-icons/fa';
 import '../Sidebar.css';
 import logo1 from '../assets/logo1.png';
@@ -28,7 +28,6 @@ function Sidebar({ isOpen, toggleSidebar }) {
     { path: "/drugs", icon: <FaCapsules />, text: "Drug Management", roles: ['Pharmacist'] },
     { path: "/jobcards", icon: <FaClipboardList />, text: "Jobcards", roles: ['Pharmacist', 'Doctor'] },
     { path: "/wise-paas", icon: <FaCog />, text: "Wise-Paas", roles: ['Admin'] },
-    { path: "/notifications", icon: <FaBell />, text: "Notifications", roles: ['Admin', 'Pharmacist', 'Doctor'] },
     { path: "/reports", icon: <FaChartBar />, text: "Reports", roles: ['Admin', 'Pharmacist'] },
   ];
 

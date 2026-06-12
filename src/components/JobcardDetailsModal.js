@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, Button, Row, Col, Table, Badge, Card } from 'react-bootstrap';
-import { FaPrescription, FaFlask, FaServer, FaInfoCircle } from 'react-icons/fa';
+import { FaServer, FaInfoCircle } from 'react-icons/fa';
 
 function JobcardDetailsModal({ show, handleClose, jobcard }) {
     if (!jobcard) return null;
