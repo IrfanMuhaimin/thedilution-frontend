@@ -287,3 +287,69 @@
     transform: translateX(-100%);
   }
 }
+
+/* ============================================
+   RESPONSIVE SIDEBAR OVERLAY FOR MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .sidebar {
+        width: 260px !important;
+        transform: translateX(-100%); /* Hidden by default */
+        opacity: 0;
+    }
+    
+    /* When active, slide it over the content as an drawer */
+    .sidebar:not(.collapsed) {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+        box-shadow: 5px 0 30px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    /* Force content area to fill 100% of screen, no margin */
+    .content-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+}
+
+/* === RESPONSIVE SIDEBAR MOBILE FIXES === */
+
+/* 1. The Mobile Close Button (Hidden on Desktop, shown on Mobile) */
+.btn-close-sidebar {
+    background: none;
+    border: none;
+    color: #043873; /* Match your primary blue */
+    font-size: 1.25rem;
+    padding: 8px;
+    display: none; /* Default hidden */
+    transition: transform 0.2s;
+}
+
+.btn-close-sidebar:active {
+    transform: scale(0.9);
+}
+
+/* 2. The Blurred Backdrop Overlay */
+.sidebar-mobile-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4); /* Dim background */
+    backdrop-filter: blur(4px); /* Modern blur effect */
+    z-index: 1029; /* Sits right under the sidebar (1030) but above everything else */
+    animation: fadeInBackdrop 0.25s ease-out;
+}
+
+@keyframes fadeInBackdrop {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+    .btn-close-sidebar {
+        display: block; /* Show only on mobile screens */
+    }
+}

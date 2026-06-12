@@ -556,3 +556,29 @@
         transform: translateY(0);
     }
 }
+
+/* ============================================
+   RESPONSIVE TABLES & SECURE ACTION COLUMNS
+   ============================================ */
+
+/* 1. Force the Actions column to never wrap, preventing squishing */
+td.text-center, th.text-center {
+    white-space: nowrap !important;
+    width: 1%; /* Forces the column to shrink tightly around the buttons */
+}
+
+/* 2. Ensure every table has a smooth horizontal swipe on Mobile/iPad */
+.table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch; /* Smooth iOS momentum scrolling */
+    border-radius: 12px;
+}
+
+/* Subtle scrollbar indicator for mobile tables */
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}

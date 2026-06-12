@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
+import { Navbar, Container, NavDropdown } from 'react-bootstrap';
 import { FaBars, FaUser, FaSignOutAlt, FaChevronDown, FaBell, FaCommentDots } from 'react-icons/fa';
 
 // Contexts
@@ -84,9 +84,20 @@ function AppContent() {
 
   return (
     <div className="app-layout">
-      {!isCompleteProfilePath && <Sidebar isOpen={isSidebarOpen} />}
+      {/* 1. Passed toggleSidebar as a prop */}
+      {!isCompleteProfilePath && <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />}
       
-      <div className="content-wrapper" style={{ marginLeft: (isSidebarOpen && !isCompleteProfilePath) ? '280px' : '0' }}>
+      {/* 2. NEW: Semi-transparent backdrop for mobile overlay */}
+      {!isCompleteProfilePath && isSidebarOpen && (
+          <div className="sidebar-mobile-backdrop d-md-none" onClick={toggleSidebar}></div>
+      )}
+      
+      <div 
+        className="content-wrapper" 
+        style={{ 
+          marginLeft: (isSidebarOpen && !isCompleteProfilePath) ? '280px' : '0' 
+        }}
+      >
         <Navbar expand="lg" className="app-navbar position-sticky top-0">
           <Container fluid className="px-3">
             

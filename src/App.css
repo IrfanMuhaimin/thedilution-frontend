@@ -406,3 +406,76 @@
 .text-emergency-3 { color: #c7a94e !important; font-weight: 750; font-size: 1.1rem; } /* Yellow */
 .text-emergency-2 { color: #0041cc !important; font-weight: 750; font-size: 1.1rem; } /* Light Blue */
 .text-emergency-1 { color: #01cc0b !important; font-weight: 750; font-size: 1.1rem; } /* Gray */
+
+/* ============================================
+   RESPONSIVE HEADER & NAVBAR (PHONES & IPADS)
+   ============================================ */
+
+@media (max-width: 991px) {
+    /* Reduce navbar padding slightly on tablets */
+    .navbar.app-navbar {
+        padding: 0.5rem 1rem !important;
+    }
+    
+    /* Shrink the brand text slightly so it doesn't wrap */
+    .navbar-brand-premium {
+        font-size: 1.15rem !important;
+    }
+}
+
+@media (max-width: 768px) {
+    /* 1. Hide the user details text (Name & Role) on Mobile */
+    .user-text-info {
+        display: none !important;
+    }
+    
+    /* 2. Turn the Profile Pill into a neat clean circle */
+    .user-profile-pill {
+        padding: 4px !important; /* Fits perfectly around the avatar */
+        border-radius: 50% !important;
+    }
+    
+    /* Hide the dropdown arrow since it's just a circle now */
+    .nav-dropdown-caret {
+        display: none !important;
+    }
+
+    /* 3. Reduce spacing between actions slightly */
+    .header-actions-group {
+        gap: 8px !important;
+    }
+    
+    .icon-circle {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 1rem !important;
+    }
+}
+
+/* === EXTRA MOBILE NAVBAR FIXES === */
+@media (max-width: 576px) {
+    /* 1. Shrink the brand text so it doesn't collide with the toggle button */
+    .navbar-brand-premium {
+        font-size: 1rem !important;
+        margin-left: 0.5rem !important;
+    }
+    
+    .brand-dot {
+        width: 6px !important;
+        height: 6px !important;
+        margin-right: 6px !important;
+    }
+
+    /* 2. Make the action buttons slightly smaller on small phones */
+    .icon-circle {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* 3. Adjust unread badges so they don't overlap */
+    .notif-badge-pill {
+        padding: 2px 4px !important;
+        font-size: 0.6rem !important;
+    }
+}

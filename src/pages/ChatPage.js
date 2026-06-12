@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Form, Button, InputGroup, Spinner, Alert, Badge } from 'react-bootstrap';
-import { FaCommentDots, FaPaperPlane, FaSearch, FaUser, FaCheckDouble, FaFileMedical, FaTimes } from 'react-icons/fa';
+import { FaCommentDots, FaPaperPlane, FaSearch, FaFileMedical, FaTimes, FaArrowLeft } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
@@ -13,7 +13,7 @@ function ChatPage() {
     const { socket, onlineUsers, contacts, refreshContacts } = useChat();
     const location = useLocation();
 
-    // UI States
+    // 1. UI States
     const [activeContact, setActiveContact] = useState(null);
     const [messages, setMessages] = useState([]);
     const [typedMessage, setTypedMessage] = useState('');
@@ -22,59 +22,16 @@ function ChatPage() {
     const [error, setError] = useState('');
     const [attachedJobcard, setAttachedJobcard] = useState(null);
 
+    // 2. Refs
     const messagesEndRef = useRef(null);
-    
-    // --- CRITICAL FIX: THE LOCK GUARD ---
-    // This remembers if we already performed the redirection from the Jobcard table
     const hasRedirectedRef = useRef(false); 
 
+    // 3. Callback functions (DEFINED AT THE TOP to prevent scoping warnings)
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
-
-    // --- SHUTTLE SHORTCUT WITH LOCK GUARD ---
-    useEffect(() => {
-        // If we already redirected, do not run this block again
-        if (hasRedirectedRef.current) return;
-
-        if (location.state && location.state.contactId && contacts.length > 0) {
-            const targetContact = contacts.find(c => c.userId === location.state.contactId);
-            if (targetContact) {
-                handleSelectContact(targetContact);
-                
-                if (location.state.jobcardRef) {
-                    setAttachedJobcard(location.state.jobcardRef);
-                }
-                
-                // Close the lock so sidebar updates don't trigger this again
-                hasRedirectedRef.current = true; 
-                
-                // Clear state in browser history
-                window.history.replaceState({}, document.title);
-            }
-        }
-    }, [location.state, contacts]); // Stable dependency
-
-    // Listen for incoming messages
-    useEffect(() => {
-        if (!socket || !activeContact) return;
-
-        const handleIncomingMessage = (msg) => {
-            if (msg.senderId === activeContact.userId) {
-                setMessages(prev => [...prev, msg]);
-                chatService.getConversation(activeContact.userId).catch(() => {});
-            }
-        };
-
-        socket.on('receive_message', handleIncomingMessage);
-        return () => socket.off('receive_message', handleIncomingMessage);
-    }, [socket, activeContact]);
-
-    const handleSelectContact = async (contact) => {
+    const handleSelectContact = useCallback(async (contact) => {
         setActiveContact(contact);
         setLoadingHistory(true);
         setError('');
@@ -87,7 +44,7 @@ function ChatPage() {
         } finally {
             setLoadingHistory(false);
         }
-    };
+    }, [refreshContacts]);
 
     const handleSendMessage = (e, customContent = null) => {
         if (e) e.preventDefault();
@@ -122,6 +79,44 @@ function ChatPage() {
         setAttachedJobcard(null); 
     };
 
+    const isUserOnline = (userId) => onlineUsers.includes(userId);
+    const getInitials = (name) => name?.charAt(0).toUpperCase() || 'U';
+
+    // 4. Effects (DEFINED BELOW callbacks so they can safely call handleSelectContact)
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    useEffect(() => {
+        if (hasRedirectedRef.current) return;
+
+        if (location.state && location.state.contactId && contacts.length > 0) {
+            const targetContact = contacts.find(c => c.userId === location.state.contactId);
+            if (targetContact) {
+                handleSelectContact(targetContact);
+                if (location.state.jobcardRef) {
+                    setAttachedJobcard(location.state.jobcardRef);
+                }
+                hasRedirectedRef.current = true; 
+                window.history.replaceState({}, document.title);
+            }
+        }
+    }, [location.state, contacts, handleSelectContact]);
+
+    useEffect(() => {
+        if (!socket || !activeContact) return;
+
+        const handleIncomingMessage = (msg) => {
+            if (msg.senderId === activeContact.userId) {
+                setMessages(prev => [...prev, msg]);
+                chatService.getConversation(activeContact.userId).catch(() => {});
+            }
+        };
+
+        socket.on('receive_message', handleIncomingMessage);
+        return () => socket.off('receive_message', handleIncomingMessage);
+    }, [socket, activeContact]);
+
     const filteredContacts = useMemo(() => {
         return contacts.filter(c => 
             c.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -129,13 +124,10 @@ function ChatPage() {
         );
     }, [contacts, searchQuery]);
 
-    const isUserOnline = (userId) => onlineUsers.includes(userId);
-    const getInitials = (name) => name?.charAt(0).toUpperCase() || 'U';
-
     return (
         <div className="chat-page-container">
             {/* SIDEBAR */}
-            <div className="chat-sidebar">
+            <div className={`chat-sidebar ${activeContact ? 'd-none d-md-flex' : 'w-100-mobile'}`}>
                 <div className="chat-sidebar-header">
                     <InputGroup className="shadow-sm rounded-pill overflow-hidden">
                         <InputGroup.Text className="bg-light border-0"><FaSearch className="text-muted" /></InputGroup.Text>
@@ -190,11 +182,14 @@ function ChatPage() {
             </div>
 
             {/* CHAT WINDOW */}
-            <div className="chat-window">
+            <div className={`chat-window ${!activeContact ? 'd-none d-md-flex' : 'w-100-mobile'}`}>
                 {activeContact ? (
                     <>
                         <div className="chat-window-header">
                             <div className="d-flex align-items-center">
+                                <button className="btn-back-chat d-md-none me-3" onClick={() => setActiveContact(null)} title="Back">
+                                    <FaArrowLeft />
+                                </button>
                                 <div className="position-relative">
                                     {activeContact.profilePicture ? (
                                         <img src={activeContact.profilePicture} alt="Avatar" className="contact-avatar" />
@@ -246,7 +241,7 @@ function ChatPage() {
                             )}
                         </div>
 
-                        {/* FLOATING PREVIEW BAR */}
+                        {/* FLOATING REFERENCE BAR */}
                         {attachedJobcard && (
                             <div className="floating-reference-bar d-flex align-items-center justify-content-between p-3 border-top bg-light">
                                 <div className="d-flex align-items-center">
@@ -290,7 +285,7 @@ function ChatPage() {
                         </div>
                     </>
                 ) : (
-                    <div className="chat-empty-state">
+                    <div className="chat-empty-state d-none d-md-flex">
                         <div className="chat-empty-icon shadow-sm">
                             <FaCommentDots />
                         </div>

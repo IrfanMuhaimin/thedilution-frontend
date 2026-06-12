@@ -1,22 +1,23 @@
 /* src/styles/ChatPage.css */
 
 .chat-page-container {
-    height: calc(100vh - 110px); /* Fill screen below navbar and margins */
+    height: calc(100vh - 110px); /* Strict height constraint */
     background: #ffffff;
     border-radius: 20px;
     border: 1px solid rgba(4, 56, 115, 0.08);
     display: flex;
-    overflow: hidden;
+    overflow: hidden; /* Prevents container from leaking */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
-/* === LEFT SIDEBAR (CONTACTS) === */
+/* === SIDEBAR (CONTACTS) === */
 .chat-sidebar {
     width: 320px;
     border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
     background: #f8fafc;
+    height: 100%;
 }
 
 .chat-sidebar-header {
@@ -39,7 +40,7 @@
 
 .contacts-list {
     flex-grow: 1;
-    overflow-y: auto;
+    overflow-y: auto; /* Sidebar contacts scroll independently */
 }
 
 .contact-item {
@@ -117,15 +118,16 @@
     margin-top: 2px;
 }
 
-/* === RIGHT SIDE (ACTIVE CHAT WINDOW) === */
+/* === ACTIVE CHAT WINDOW === */
 .chat-window {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
     background: #ffffff;
+    height: 100%; /* Force window to lock to parent height */
+    overflow: hidden; /* Lock the header and footer in place */
 }
 
-/* Header */
 .chat-window-header {
     padding: 0.75rem 1.5rem;
     border-bottom: 1px solid #e2e8f0;
@@ -134,13 +136,15 @@
     justify-content: space-between;
     background: #ffffff;
     height: 70px;
+    flex-shrink: 0; /* Prevents the header from squishing */
 }
 
-/* Message Bubble Container */
+/* --- THE SCROLLABLE INNER MESSAGE BOX --- */
 .chat-messages-container {
-    flex-grow: 1;
+    flex: 1 1 0%; /* Explains to the browser: expand only in available space */
+    min-height: 0; /* CRITICAL: Forces flexbox to scroll internally rather than growing */
     padding: 1.5rem;
-    overflow-y: auto;
+    overflow-y: auto; /* This is the ONLY area allowed to scroll */
     background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     display: flex;
     flex-direction: column;
@@ -180,11 +184,12 @@
     opacity: 0.7;
 }
 
-/* Bottom Input Area */
+/* Input Area (Bottom Footer) */
 .chat-input-area {
     padding: 1rem 1.5rem;
     border-top: 1px solid #e2e8f0;
     background: #ffffff;
+    flex-shrink: 0; /* Prevents the input area from squishing */
 }
 
 .chat-input-field {
@@ -200,7 +205,7 @@
     box-shadow: 0 0 0 3px rgba(4, 56, 115, 0.15) !important;
 }
 
-/* === LANDING/EMPTY STATE === */
+/* Empty State Panel */
 .chat-empty-state {
     display: flex;
     flex-direction: column;
@@ -223,23 +228,30 @@
     margin-bottom: 1.5rem;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .chat-sidebar {
-        width: 80px;
-    }
-    .chat-sidebar-header, .contact-info, .contact-meta {
-        display: none;
-    }
-    .contact-item {
-        justify-content: center;
-        padding: 0.85rem;
-    }
+/* --- FLOATING REFERENCE BAR (SHOPEE STYLE) --- */
+.floating-reference-bar {
+    border-left: 5px solid #043873;
+    flex-shrink: 0; /* Prevent from squishing */
+}
+
+.chat-bubble.reference-bubble {
+    border-radius: 12px !important;
+    max-width: 50%;
+}
+
+.chat-bubble.sent.reference-bubble {
+    background: #11345d !important;
+    border: 1px solid rgba(255, 228, 146, 0.3);
+}
+
+.chat-bubble.received.reference-bubble {
+    background: #e2e8f0 !important;
+    border: 1px solid #cbd5e1;
 }
 
 /* Custom Red Notification Count Badge */
 .badge-notif-count {
-    background-color: #ef4444; /* Alert Red */
+    background-color: #ef4444;
     color: #ffffff;
     font-size: 0.75rem;
     font-weight: 700;
@@ -252,34 +264,32 @@
     line-height: 1.2;
 }
 
-.floating-reference-bar {
-    border-left: 5px solid #043873;
-    animation: slideInUp 0.3s ease-out;
+/* === NEW: WHATSAPP MOBILE BACK BUTTON === */
+.btn-back-chat {
+    background: none;
+    border: none;
+    color: #043873;
+    font-size: 1.25rem;
+    padding: 5px;
+    transition: transform 0.2s;
 }
 
-/* Reference Message Bubble */
-.chat-bubble.reference-bubble {
-    border-radius: 12px !important;
-    max-width: 50%;
+.btn-back-chat:active {
+    transform: scale(0.9);
 }
 
-.chat-bubble.sent.reference-bubble {
-    background: #11345d !important; /* Slightly darker shade of blue for reference card */
-    border: 1px solid rgba(255, 228, 146, 0.3);
-}
+/* ============================================
+   RESPONSIVE DESIGN (THE WHATSAPP SWITCH)
+   ============================================ */
 
-.chat-bubble.received.reference-bubble {
-    background: #e2e8f0 !important; /* Soft gray for received reference card */
-    border: 1px solid #cbd5e1;
-}
-
-@keyframes slideInUp {
-    from {
-        transform: translateY(100%);
-        opacity: 0;
+@media (max-width: 768px) {
+    .chat-page-container {
+        height: calc(100vh - 90px) !important;
     }
-    to {
-        transform: translateY(0);
-        opacity: 1;
+
+    .w-100-mobile {
+        width: 100% !important;
+        display: flex !important;
+        height: 100% !important; /* Force to lock to container height */
     }
 }
