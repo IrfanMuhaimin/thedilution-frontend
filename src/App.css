@@ -479,3 +479,16 @@
         font-size: 0.6rem !important;
     }
 }
+
+@media (min-width: 768px) {
+    .border-end-md {
+        border-right: 1px dashed rgba(255, 228, 146, 0.3) !important;
+    }
+    .border-start-md {
+        border-left: 1px dashed rgba(255, 228, 146, 0.3) !important;
+    }
+}
+
+.custom-status-badge.text-lowercase {
+    text-transform: none !important;
+}

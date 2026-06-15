@@ -1,34 +1,26 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom'; // Removed useLocation
 
 const AuthContext = createContext(null);
 
-// Helper function to decode JWT and check expiration
 const isTokenExpired = (token) => {
     if (!token) return true;
     try {
-        // JWTs have 3 parts separated by dots. The payload is the 2nd part.
         const payload = JSON.parse(atob(token.split('.')[1]));
-        // payload.exp is in seconds, Date.now() is in milliseconds
         return Date.now() >= payload.exp * 1000;
-    } catch (e) {
-        return true; // If token is malformed, assume it's expired
-    }
+    } catch (e) { return true; }
 };
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-    const location = useLocation();
 
-    // 1. Initial Load: Check if token exists and is valid
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
             const parsedUser = JSON.parse(storedUser);
             if (isTokenExpired(parsedUser.token)) {
-                // Token is already expired on load
                 localStorage.removeItem('user');
                 setUser(null);
             } else {
@@ -38,19 +30,28 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    // 2. Active Session Monitor: Check token every 1 minute
+    // 1. Memoized logout function
+    const logout = useCallback((message = null) => {
+        setUser(null);
+        localStorage.removeItem('user');
+        if (message && typeof message === 'string') {
+            navigate('/login', { state: { sessionMessage: message } });
+        } else {
+            navigate('/login');
+        }
+    }, [navigate]);
+
     useEffect(() => {
         if (!user || !user.token) return;
 
         const intervalId = setInterval(() => {
             if (isTokenExpired(user.token)) {
-                console.log("Session expired. Automatically logging out.");
                 logout("Your session has expired for security reasons. Please log in again.");
             }
-        }, 60000); // 60000 ms = 1 minute
+        }, 60000);
 
-        return () => clearInterval(intervalId); // Cleanup timer on unmount
-    }, [user]);
+        return () => clearInterval(intervalId);
+    }, [user, logout]); // Added logout here safely
 
     const updateUserInfo = (newData) => {
         setUser(prevUser => {
@@ -97,19 +98,6 @@ export const AuthProvider = ({ children }) => {
             return { success: true };
         } catch (error) {
             return { success: false, message: error.message };
-        }
-    };
-
-    // 3. Logout function now accepts an optional message
-    const logout = (message = null) => {
-        setUser(null);
-        localStorage.removeItem('user');
-        
-        // Navigate to login, passing the message in the router state
-        if (message && typeof message === 'string') {
-            navigate('/login', { state: { sessionMessage: message } });
-        } else {
-            navigate('/login');
         }
     };
 

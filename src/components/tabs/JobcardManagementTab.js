@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Table, Button, Alert, Spinner, Badge, Form, Row, Col, InputGroup } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaPlay, FaEye, FaArchive, FaUser, FaCheckCircle, FaSearch, FaSortAmountDown, FaExclamationTriangle, FaCommentDots } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaPlay, FaEye, FaArchive, FaUser, FaCheckCircle, FaSearch, FaSortAmountDown, FaExclamationTriangle } from 'react-icons/fa';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import * as jobcardService from '../../services/jobcardService';
 import JobcardModal from '../JobcardModal';
+import PatientParamsModal from '../PatientParamsModal';
 import RecipeSelectionModal from '../RecipeSelectionModal';
 import JobcardDetailsModal from '../JobcardDetailsModal'; 
 import DeleteConfirmationModal from '../DeleteConfirmationModal';
-import PatientParamsModal from '../PatientParamsModal';
 
 function JobcardManagementTab({ onExecuteSuccess }) {
     const { user } = useAuth();
@@ -21,14 +21,14 @@ function JobcardManagementTab({ onExecuteSuccess }) {
 
     // Filter & Sort States
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortBy, setSortBy] = useState('triage'); // Default: Emergency Level DESC
+    const [sortBy, setSortBy] = useState('triage');
 
     // Modals
     const [showJobcardModal, setShowJobcardModal] = useState(false);
+    const [showPatientParamsModal, setShowPatientParamsModal] = useState(false);
     const [showPrescriptionStepModal, setShowPrescriptionStepModal] = useState(false);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-     const [showPatientParamsModal, setShowPatientParamsModal] = useState(false);
     
     // States
     const [currentItem, setCurrentItem] = useState(null);
@@ -50,40 +50,49 @@ function JobcardManagementTab({ onExecuteSuccess }) {
         }
     }, []);
 
+    const handleBackToStep1 = () => {
+        setShowPatientParamsModal(false);
+        setShowJobcardModal(true); // Open Step 1
+    };
+
+    const handleBackToStep2 = () => {
+        setShowPrescriptionStepModal(false);
+        setShowPatientParamsModal(true); // Open Step 2
+    };
+
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    // --- HIGH-PERFORMANCE DYNAMIC FILTERING & SORTING (NO BLINKING) ---
+    // --- HIGH-PERFORMANCE DYNAMIC FILTERING & SORTING ---
     const processedJobcards = useMemo(() => {
         let result = [...jobcardList];
 
-        // 1. Apply Search (Filter by Dilution, Requester, Approver)
+        // 1. Search filter
         if (searchTerm) {
             const query = searchTerm.toLowerCase();
             result = result.filter(j => 
                 j.Dilution?.name?.toLowerCase().includes(query) ||
                 j.requester?.username?.toLowerCase().includes(query) ||
-                j.approver?.username?.toLowerCase().includes(query)
+                j.executor?.username?.toLowerCase().includes(query)
             );
         }
 
-        // 2. Apply Custom Sorting
+        // 2. Sort Logic
         result.sort((a, b) => {
             switch (sortBy) {
                 case 'requestDate':
                     return new Date(b.requestDate) - new Date(a.requestDate);
-                case 'approveDate':
-                    return new Date(b.approveDate || 0) - new Date(a.approveDate || 0);
+                case 'executionDate':
+                    return new Date(b.executionDate || 0) - new Date(a.executionDate || 0);
                 case 'dilutionName':
                     return (a.Dilution?.name || '').localeCompare(b.Dilution?.name || '');
                 case 'requester':
                     return (a.requester?.username || '').localeCompare(b.requester?.username || '');
-                case 'approver':
-                    return (a.approver?.username || '').localeCompare(b.approver?.username || '');
+                case 'executor':
+                    return (a.executor?.username || '').localeCompare(b.executor?.username || '');
                 case 'status':
                     return (a.status || '').localeCompare(b.status || '');
                 case 'triage':
                 default:
-                    // Triage: Emergency Level DESC (5 to 1), then Request Date DESC
                     if (b.emergencyLevel !== a.emergencyLevel) {
                         return b.emergencyLevel - a.emergencyLevel;
                     }
@@ -99,16 +108,16 @@ function JobcardManagementTab({ onExecuteSuccess }) {
     const handleViewDetails = (item) => { setSelectedForDetails(item); setShowDetailsModal(true); };
     const handleArchiveClick = (item) => { setItemToArchive(item); setShowDeleteModal(true); };
 
- const handleProceedToPatientStep = (jobcardData) => {
+    const handleProceedToPatientStep = (jobcardData) => {
         setTempJobcardData(jobcardData);
         setShowJobcardModal(false);
-        setShowPatientParamsModal(true); // Jump to Step 2
+        setShowPatientParamsModal(true);
     };
 
     const handleProceedToRecipeStep = (patientData) => {
         setTempJobcardData(patientData);
         setShowPatientParamsModal(false);
-        setShowPrescriptionStepModal(true); // Jump to Step 3
+        setShowPrescriptionStepModal(true);
     };
 
     const handleSave = async (finalData) => {
@@ -118,11 +127,12 @@ function JobcardManagementTab({ onExecuteSuccess }) {
                 setShowJobcardModal(false);
             } else {
                 await jobcardService.addJobcard(finalData);
-                setShowPrescriptionStepModal(false); // Close final step
+                setShowPrescriptionStepModal(false);
             }
             fetchData();
         } catch (err) { throw err; }
     };
+
     const handleConfirmArchive = async () => {
         if (!itemToArchive) return;
         setIsArchiving(true);
@@ -141,15 +151,21 @@ function JobcardManagementTab({ onExecuteSuccess }) {
             const result = await jobcardService.executeJobcard(jobcard.jobcardId, user.userId);
             alert(result.message);
             fetchData();
+            
+            navigate('/jobcards', { 
+                state: { activeExecutionHardwareId: jobcard.hardwareId } 
+            });
             onExecuteSuccess();
-        } catch (err) { setError(err.message); } 
-        finally { setExecutingId(null); }
+        } catch (err) { 
+            setError(err.message); 
+        } finally { 
+            setExecutingId(null); 
+        }
     };
 
     const getStatusBadge = (status) => {
         const map = { 
             'Pending': 'bg-status-pending', 
-            'Approved': 'bg-status-approved', 
             'Processing': 'bg-status-processing', 
             'Completed': 'bg-status-completed', 
             'Rejected': 'bg-status-rejected' 
@@ -157,7 +173,6 @@ function JobcardManagementTab({ onExecuteSuccess }) {
         return map[status] || 'bg-status-unknown';
     };
 
-    // --- Color coded emergency level pills ---
     const getEmergencyLevelBadge = (level) => {
         switch (level) {
             case 5: return { css: 'text-emergency-5', text: '5' };
@@ -172,17 +187,17 @@ function JobcardManagementTab({ onExecuteSuccess }) {
 
     return (
         <>
-            {/* SEARCH & FILTER CONTROLS */}
+            {/* CONTROL PANEL */}
             <div className="bg-white p-3 rounded-4 shadow-sm border mb-4">
                 <Row className="align-items-end g-3">
                     <Col md={5}>
                         <Form.Group controlId="jobcardSearch">
-                            <Form.Label className="small fw-bold text-muted">SEARCH JOBCARDS</Form.Label>
+                            <Form.Label className="small fw-bold text-muted">SEARCH WORKSPACE</Form.Label>
                             <InputGroup>
                                 <InputGroup.Text className="bg-light border-0"><FaSearch className="text-muted" /></InputGroup.Text>
                                 <Form.Control 
                                     type="text" 
-                                    placeholder="Search by Product, Requester, or Approver..." 
+                                    placeholder="Product, Requester, or Executor..." 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="bg-light border-0"
@@ -192,22 +207,24 @@ function JobcardManagementTab({ onExecuteSuccess }) {
                     </Col>
                     <Col md={4}>
                         <Form.Group controlId="jobcardSort">
-                            <Form.Label className="small fw-bold text-muted"><FaSortAmountDown className="me-2"/>SORT WORKSPACE BY</Form.Label>
+                            <Form.Label className="small fw-bold text-muted"><FaSortAmountDown className="me-2"/>SORT BY</Form.Label>
                             <Form.Select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-light border-0 py-2">
                                 <option value="triage">Triage (Emergency Level 5 → 1)</option>
-                                <option value="requestDate">Request Date & Time</option>
-                                <option value="approveDate">Approval Date & Time</option>
-                                <option value="dilutionName">Dilution Product Name</option>
+                                <option value="requestDate">Request Datetime</option>
+                                <option value="executionDate">Execution Datetime</option>
+                                <option value="dilutionName">Dilution Name</option>
                                 <option value="requester">Requester Name</option>
-                                <option value="approver">Approver Name</option>
-                                <option value="status">Operational Status</option>
+                                <option value="executor">Executor Name</option>
+                                <option value="status">Status</option>
                             </Form.Select>
                         </Form.Group>
                     </Col>
                     <Col md={3} className="text-end">
-                        <Button className="btn-custom-primary shadow-sm w-100 py-2 rounded-pill" onClick={handleAdd}>
-                            <FaPlus className="me-2" /> Create Job Card
-                        </Button>
+                        {user.role !== 'Admin' && (
+                            <Button className="btn-custom-primary shadow-sm w-100 py-2 rounded-pill" onClick={handleAdd}>
+                                <FaPlus className="me-2" /> Create Job Card
+                            </Button>
+                        )}
                     </Col>
                 </Row>
             </div>
@@ -222,12 +239,12 @@ function JobcardManagementTab({ onExecuteSuccess }) {
                        <thead className="table-light text-muted small text-uppercase">
                             <tr>
                                 <th className="ps-4" style={{ width: '80px' }}>ID</th>
-                                <th className="text-center" style={{ width: '80px' }}>Level</th>
+                                <th>Level</th>
                                 <th>Dilution Name</th>
                                 <th>Requester</th>
                                 <th>Request Datetime</th>
-                                <th>Approver</th>
-                                <th>Approve Datetime</th>
+                                <th>Executor</th>
+                                <th>Execution Datetime</th>
                                 <th>Status</th>
                                 <th className="text-center pe-4">Actions</th>
                             </tr>
@@ -235,58 +252,34 @@ function JobcardManagementTab({ onExecuteSuccess }) {
                         <tbody>
                             {processedJobcards.length > 0 ? processedJobcards.map(item => {
                                 const emg = getEmergencyLevelBadge(item.emergencyLevel);
+                                const canExecute = user.role === 'Doctor' || user.role === 'Pharmacist';
                                 return (
                                     <tr key={item.jobcardId}>
                                         <td className="ps-4">
                                             <Badge bg="light" text="dark" className="border">#{item.jobcardId}</Badge>
                                         </td>
                                         
-                                        {/* NEW EMERGENCY LEVEL BADGE */}
-                                        <td className="text-center">
-                                            <span className={emg.css}>
-                                                {emg.text}
-                                            </span>
-                                        </td>
+                                        <td><span className={`fw-bold ${emg.css}`}>{emg.text}</span></td>
 
                                         <td className="entity-name-dark-blue">{item.Dilution?.name}</td>
                                         
                                         <td>
-                                            <div className="small d-flex align-items-center justify-content-between">
-                                                <span>
-                                                    <FaUser className="me-1 text-muted"/> {item.requester?.username || 'N/A'}
-                                                </span>
-                                                {item.requester?.userId && user.userId !== item.requester.userId && (
-                                                    <FaCommentDots 
-                                                        className="text-primary cursor-pointer ms-2" 
-                                                        title={`Message ${item.requester.username}`}
-                                                        onClick={() => navigate('/chat', { state: { contactId: item.requester.userId } })}
-                                                        style={{ fontSize: '1.1rem' }}
-                                                    />
-                                                )}
-                                            </div>
+                                            <span className="small fw-bold">
+                                                <FaUser className="me-1 text-muted"/> {item.requester?.username || 'N/A'}
+                                            </span>
                                         </td>
                                         
                                         <td className="small text-muted">{format(new Date(item.requestDate), 'dd/MM/yyyy HH:mm')}</td>
                                         
                                         <td>
-                                            {item.approver ? (
-                                                <div className="small d-flex align-items-center justify-content-between">
-                                                    <span>
-                                                        <FaCheckCircle className="me-1 text-success"/> {item.approver.username}
-                                                    </span>
-                                                    {user.userId !== item.approver.userId && (
-                                                        <FaCommentDots 
-                                                            className="text-primary cursor-pointer ms-2" 
-                                                            title={`Message ${item.approver.username}`}
-                                                            onClick={() => navigate('/chat', { state: { contactId: item.approver.userId } })}
-                                                            style={{ fontSize: '1.1rem' }}
-                                                        />
-                                                    )}
+                                            {item.executor ? (
+                                                <div className="small fw-bold text-success">
+                                                    <FaCheckCircle className="me-1 text-success"/> {item.executor.username}
                                                 </div>
-                                            ) : <span className="text-muted small fst-italic">Waiting...</span>}
+                                            ) : <span className="text-muted small fst-italic">Not executed</span>}
                                         </td>
                                         
-                                        <td className="small text-muted">{item.approveDate ? format(new Date(item.approveDate), 'dd/MM/yyyy HH:mm') : '-'}</td>
+                                        <td className="small text-muted">{item.executionDate ? format(new Date(item.executionDate), 'dd/MM/yyyy HH:mm') : '-'}</td>
                                         
                                         <td>
                                             <span className={`custom-status-badge ${getStatusBadge(item.status)}`}>
@@ -300,15 +293,19 @@ function JobcardManagementTab({ onExecuteSuccess }) {
                                                     <FaEye />
                                                 </button>
 
-                                                {item.status === 'Approved' && (
-                                                    <button className="btn-table-action text-success" onClick={() => handleExecute(item)} disabled={executingId === item.jobcardId} title="Execute Jobcard">
+                                                {/* EXECUTE BUTTON - ONLY FOR PENDING JOBS & FORBIDDEN FOR ADMINS */}
+                                                {item.status === 'Pending' && canExecute && (
+                                                    <button className="btn-table-action text-success" onClick={() => handleExecute(item)} disabled={executingId === item.jobcardId} title="Execute to Robot">
                                                         {executingId === item.jobcardId ? <Spinner size="sm" /> : <FaPlay />}
                                                     </button>
                                                 )}
 
-                                                <button className="btn-table-action" onClick={() => handleEdit(item)} title="Edit Jobcard">
-                                                    <FaEdit />
-                                                </button>
+                                                {/* EDIT BUTTON - Disabled if already Completed */}
+                                                {item.status === 'Pending' && (
+                                                    <button className="btn-table-action" onClick={() => handleEdit(item)} title="Edit Jobcard">
+                                                        <FaEdit />
+                                                    </button>
+                                                )}
 
                                                 <button className="btn-table-action" onClick={() => handleArchiveClick(item)} title="Archive Jobcard">
                                                     <FaArchive />
@@ -333,30 +330,45 @@ function JobcardManagementTab({ onExecuteSuccess }) {
             {/* VIEW ARCHIVED LINK */}
             {!loading && (
                 <div className="d-flex justify-content-center mt-4 mb-3">
-                    <Button 
-                        variant="light" 
-                        className="archive-bottom-btn shadow-sm"
-                        onClick={() => navigate('/jobcards/archive')}
-                    >
-                        <FaArchive className="me-2 text-muted" />
-                        <span className="fw-bold text-muted">View Archived Jobcards</span>
+                    <Button variant="light" className="archive-bottom-btn shadow-sm" onClick={() => navigate('/jobcards/archive')}>
+                        <FaArchive className="me-2 text-muted" /> <span className="fw-bold text-muted">View Archived Jobcards</span>
                     </Button>
                 </div>
             )}
 
             {/* MODALS */}
-             <JobcardDetailsModal show={showDetailsModal} handleClose={() => setShowDetailsModal(false)} jobcard={selectedForDetails} />
+           <JobcardDetailsModal show={showDetailsModal} handleClose={() => setShowDetailsModal(false)} jobcard={selectedForDetails} />
             
-            {/* STEP 1: Select dilution (Now redirects to Patient Params) */}
+            {/* STEP 1: Select dilution (Cancel closes, Next goes to Step 2) */}
             <JobcardModal show={showJobcardModal} handleClose={() => setShowJobcardModal(false)} handleSave={handleSave} handleNext={handleProceedToPatientStep} item={currentItem} />
             
-            {/* STEP 2: Input patient age & weight */}
-            <PatientParamsModal show={showPatientParamsModal} handleClose={() => setShowPatientParamsModal(false)} handleNext={handleProceedToRecipeStep} tempJobcardData={tempJobcardData} />
+            {/* STEP 2: Input patient params (Back goes to Step 1, Next goes to Step 3) */}
+            <PatientParamsModal 
+                show={showPatientParamsModal} 
+                handleClose={() => setShowPatientParamsModal(false)} 
+                handleBack={handleBackToStep1} // NEW
+                handleNext={handleProceedToRecipeStep} 
+                tempJobcardData={tempJobcardData} 
+            />
             
-            {/* STEP 3: Auto-Suggest & Ingredients (Now saves everything) */}
-            <RecipeSelectionModal show={showPrescriptionStepModal} handleClose={() => setShowPrescriptionStepModal(false)} handleSave={handleSave} tempJobcardData={tempJobcardData} />
+            {/* STEP 3: Auto-Suggest & Ingredients (Back goes to Step 2, Submit saves) */}
+            <RecipeSelectionModal 
+                show={showPrescriptionStepModal} 
+                handleClose={() => setShowPrescriptionStepModal(false)} 
+                handleBack={handleBackToStep2} // NEW
+                handleSave={handleSave} 
+                tempJobcardData={tempJobcardData} 
+            />
 
-            <DeleteConfirmationModal show={showDeleteModal} handleClose={() => setShowDeleteModal(false)} handleConfirm={handleConfirmArchive} userName={`Job Card #${itemToArchive?.jobcardId}`} isDeleting={isArchiving} />
+            <DeleteConfirmationModal 
+                show={showDeleteModal} 
+                handleClose={() => setShowDeleteModal(false)} 
+                handleConfirm={handleConfirmArchive} 
+                itemName={`Jobcard #${itemToArchive?.jobcardId}`} 
+                entityName="Jobcard" 
+                actionType="Archive" 
+                isProcessing={isArchiving} 
+            />
         </>
     );
 }

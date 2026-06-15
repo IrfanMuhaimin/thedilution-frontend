@@ -57,6 +57,7 @@ export const NotificationProvider = ({ children }) => {
         fetchSystemData();
         const interval = setInterval(fetchSystemData, 10000); // Heartbeat every 10s
         return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     return (

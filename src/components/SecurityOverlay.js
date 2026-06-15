@@ -1,119 +1,155 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-// --- THIS IS THE CORRECTED IMPORT LINE ---
-import { Spinner, Alert, Button } from 'react-bootstrap'; 
-import * as faceRecognitionService from '../services/faceRecognitionService';
-import '../styles/SecurityOverlay.css';
+// src/components/SecurityOverlay.js
+import React, { useState, useEffect, useRef } from 'react';
+import { Modal, Button, Spinner, Alert } from 'react-bootstrap';
+import { FaUserShield, FaExclamationTriangle, FaCamera} from 'react-icons/fa';
 
-// The 'onClose' prop is new. It's a function passed from the parent.
+const getJetsonApiBase = () => {
+    const { hostname, protocol } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://10.207.200.53:8000'; 
+    }
+    return protocol === 'http:' ? '' : 'http://100.123.35.101:8000'; 
+};
+
+const JETSON_API_BASE = getJetsonApiBase();
+
 function SecurityOverlay({ isVisible, onVerified, onClose }) {
-    const [status, setStatus] = useState('Initializing...');
-    const [statusClass, setStatusClass] = useState('status-scanning');
-    const [videoUrl, setVideoUrl] = useState('');
-    const [error, setError] = useState({ type: '', message: '' });
-    const verificationInterval = useRef(null);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [status, setStatus] = useState("Initializing...");
+    const [error, setError] = useState(null);
 
-    // A retry function to restart the verification process
-    const startVerification = useCallback(async () => {
-        // Reset all states before retrying
-        setError({ type: '', message: '' });
-        setStatus('Connecting...');
-        setStatusClass('status-scanning');
-        setVideoUrl(''); // Ensure video is cleared before retry
+    const darkRed = '#750000';
+    const darkerRed = '#520000';
 
-        // Clear any lingering intervals
-        if (verificationInterval.current) {
-            clearInterval(verificationInterval.current);
-        }
-
-        try {
-            await faceRecognitionService.startVerificationMode();
-            setStatus('Scanning...');
-            setTimeout(() => setVideoUrl(faceRecognitionService.getVideoFeedUrl()), 200);
-
-            verificationInterval.current = setInterval(async () => {
-                try {
-                    const data = await faceRecognitionService.checkVerificationStatus();
-                    if (data.verified === true) {
-                        clearInterval(verificationInterval.current);
-                        setVideoUrl('');
-                        setStatus(`Verified: ${data.user}`);
-                        setStatusClass('status-verified');
-                        setTimeout(() => onVerified(), 1500);
-                    }
-                } catch (pollError) {
-                    setError({ type: 'lost_connection', message: 'Lost connection to the security module.' });
-                    setStatusClass('status-error');
-                    clearInterval(verificationInterval.current);
-                }
-            }, 1000);
-
-        } catch (initialError) {
-            setError({ type: 'incompatible', message: 'Incompatible Device: Could not connect to the Face ID module.' });
-            setStatusClass('status-error');
-        }
-    }, [onVerified]); // useCallback dependency
+    const onVerifiedRef = useRef(onVerified);
+    useEffect(() => {
+        onVerifiedRef.current = onVerified;
+    }, [onVerified]);
 
     useEffect(() => {
-        if (isVisible) {
-            startVerification(); // Initial attempt when the overlay becomes visible
-        }
-
-        // Cleanup function for when the component is hidden or unmounts
-        return () => {
-            if (verificationInterval.current) {
-                clearInterval(verificationInterval.current);
+        let interval;
+        
+        const checkStatus = async () => {
+            if (!isVisible) return;
+            
+            try {
+                const res = await fetch(`${JETSON_API_BASE}/api/machine_status`);
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    // FIXED: Removed the "!== 'MAINTENANCE'" restriction so maintenance tokens can pass
+                    if (data.status === 'ACTIVE' && data.currentUser) {
+                        setIsVerifying(false);
+                        if (onVerifiedRef.current) {
+                            onVerifiedRef.current(data.currentUser);
+                        }
+                    } else {
+                        if (data.latestRecognition && data.latestRecognition.name !== "Unknown") {
+                            setStatus(`Scanning... (Detected: ${data.latestRecognition.name})`);
+                        } else {
+                            setStatus("Please position your face directly in front of the camera frame.");
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Biometric polling failed:", err);
             }
         };
-    }, [isVisible, startVerification]);
 
-    if (!isVisible) {
-        return null;
-    }
+        if (isVisible) {
+            setIsVerifying(true);
+            setError(null);
+            setStatus("Initializing Edge AI camera stream...");
+            
+            fetch(`${JETSON_API_BASE}/api/verification/start`, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) throw new Error("Could not start AI");
+                    interval = setInterval(checkStatus, 1000);
+                })
+                .catch(e => {
+                    setError("Biometric Offline: Ensure your Jetson Orin Nano is powered on.");
+                });
+        }
 
-    // Determine what content to show in the main area
-    let content;
-    if (error.type) {
-        content = (
-            <div className="video-placeholder">
-                <Alert variant="danger" className="m-0 text-center">
-                    <Alert.Heading>{error.type === 'incompatible' ? 'Device Not Compatible' : 'Connection Error'}</Alert.Heading>
-                    <p className="mb-0">{error.message}</p>
-                </Alert>
-            </div>
-        );
-    } else {
-        content = videoUrl ? (
-            <iframe src={videoUrl} title="Verification Feed" scrolling="no"></iframe>
-        ) : (
-            <div className="video-placeholder">
-                <Spinner animation="border" variant="light" />
-                <p className="mt-2 mb-0">{status}</p>
-            </div>
-        );
-    }
+        return () => {
+            if (interval) clearInterval(interval);
+            if (isVisible) {
+                fetch(`${JETSON_API_BASE}/api/verification/stop`, { method: 'POST' }).catch(() => {});
+            }
+        };
+    }, [isVisible]);
+
+    // Manual breakout function for development and debugging overrides
+    const handleManualBypass = () => {
+        setIsVerifying(false);
+        if (onVerifiedRef.current) {
+            // Fires the verified event instantly with a fallback profile label
+            onVerifiedRef.current("ADMIN_OVERRIDE"); 
+        }
+    };
 
     return (
-        <div className="security-overlay">
-            <h1>Security Check</h1>
-            <p>Facial Verification Required</p>
-            <div className="video-frame-container">{content}</div>
-            
-            {/* Conditionally render buttons on error */}
-            {error.type ? (
-                <div className="error-actions mt-4">
-                    <Button variant="light" onClick={startVerification} className="me-3">
-                        Retry Scan
-                    </Button>
-                    <Button variant="outline-secondary" onClick={onClose}>
-                        Close
-                    </Button>
-                </div>
-            ) : (
-                <div className={`status-box ${statusClass}`}>
-                    {status}
-                </div>
-            )}
-        </div>
+        <Modal show={isVisible} onHide={onClose} backdrop="static" keyboard={false} centered className="um-modal">
+            <Modal.Header closeButton style={{ background: `linear-gradient(135deg, ${darkRed} 0%, ${darkerRed} 100%)`, border: 'none' }}>
+                <Modal.Title className="text-white fw-bold">
+                    <FaUserShield className="me-2 text-warning" /> Biometric Identity Verification
+                </Modal.Title>
+            </Modal.Header>
+            <Modal.Body className="text-center p-4 bg-light">
+                {error ? (
+                    <Alert variant="danger" className="border-0 shadow-sm d-flex align-items-center text-start">
+                        <FaExclamationTriangle className="me-3" size={24} />
+                        <div>{error}</div>
+                    </Alert>
+                ) : (
+                    <>
+                        <div className="small fw-bold text-uppercase text-secondary mb-3 d-flex align-items-center justify-content-center">
+                            <FaCamera className="me-2" /> Live Camera Stream
+                        </div>
+                        
+                        <div className="video-container mb-4 shadow" style={{
+                            borderRadius: '16px',
+                            overflow: 'hidden',
+                            backgroundColor: '#000',
+                            aspectRatio: '4/3',
+                            position: 'relative',
+                            border: '4px solid #ffffff',
+                            outline: `2px solid ${darkRed}`
+                        }}>
+                            {isVisible && (
+                                <img
+                                    src={`${JETSON_API_BASE}/video_feed?t=${Date.now()}`}
+                                    alt="Live Security Feed"
+                                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                    onError={() => setError("Biometric offline. Check network logs.")}
+                                />
+                            )}
+                        </div>
+                        
+                        <p className="text-muted fw-semibold small px-3 mb-0" style={{ minHeight: '30px' }}>
+                            {status}
+                        </p>
+                        
+                        {isVerifying && !error && (
+                            <div className="d-flex justify-content-center align-items-center mt-3" style={{ color: darkRed }}>
+                                <Spinner animation="grow" size="sm" className="me-2" style={{ backgroundColor: darkRed }} />
+                                <span className="fw-bold small text-uppercase">AI Scanner Active</span>
+                            </div>
+                        )}
+                    </>
+                )}
+            </Modal.Body>
+            {/* Added standard layout controls to offer a clean exit path */}
+            <Modal.Footer className="bg-white border-0 pb-4 d-flex justify-content-center gap-2">
+                <Button variant="secondary" className="rounded-pill px-4" onClick={onClose}>
+                    Cancel
+                </Button>
+                <Button variant="outline-danger" className="rounded-pill px-4" onClick={handleManualBypass}>
+                    Bypass Face ID
+                </Button>
+            </Modal.Footer>
+        </Modal>
     );
 }
 

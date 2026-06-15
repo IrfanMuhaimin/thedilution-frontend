@@ -1,53 +1,43 @@
-const API_URL = process.env.REACT_APP_ROBOT_API_URL;
+// src/services/robotService.js
+const API_URL = `${process.env.REACT_APP_API_URL}`;
 
-/**
- * Fetches the latest task logs from the robot's fetch_log.php API.
- */
-export const fetchTaskLogs = async () => {
-    const response = await fetch(`${API_URL}/fetch_log.php`, { cache: 'no-store' });
-    if (!response.ok) {
-        // This will now correctly throw the <!DOCTYPE error if fetch_log.php crashes
-        throw new Error('Failed to fetch robot task logs. The API may be down or misconfigured.');
-    }
-    return response.json(); // This expects JSON
+const getAuthHeader = () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    return user && user.token ? { 
+        'Authorization': `Bearer ${user.token}`,
+        'Content-Type': 'application/json'
+    } : {};
 };
 
 /**
- * Triggers a new task on the robot's trigger.php API.
- * This version is more robust and can handle both text and JSON responses.
+ * Fetches the latest task logs from your Express database
  */
-export const triggerTask = async (taskName) => {
-    const body = new URLSearchParams();
-    body.append('task', taskName);
+export const fetchTaskLogs = async (hardwareId) => {
+    // We fetch logs using your Express API, completely eliminating remote CORS blocks
+    const response = await fetch(`${API_URL}/logs/hardware/${hardwareId}`, { 
+        method: 'GET',
+        headers: getAuthHeader()
+    });
+    if (!response.ok) {
+        throw new Error('Failed to fetch robot task logs.');
+    }
+    return response.json(); 
+};
 
-    const response = await fetch(`${API_URL}/trigger.php`, {
+/**
+ * Triggers a manual diagnostic run through your Express API Gateway Proxy
+ */
+export const triggerTask = async (taskName, hardwareId) => {
+    const response = await fetch(`${API_URL}/hardware/${hardwareId}/trigger`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString()
+        headers: getAuthHeader(),
+        body: JSON.stringify({ taskName })
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to trigger task. Server responded with: ${errorText}`);
-    }
-
-    // --- THIS IS THE ROBUST FIX ---
-    // We get the raw text first.
-    const responseText = await response.text();
-
-    // Try to parse it as JSON (for future-proofing if your friend fixes it).
-    try {
-        const jsonResponse = JSON.parse(responseText);
-        // If it's JSON and has a log_id, return that.
-        if (jsonResponse && jsonResponse.log_id) {
-            return jsonResponse.log_id.toString();
-        }
-    } catch (e) {
-        // If it's not JSON, it's likely the plain text ID.
-        // We just return the text directly.
-        return responseText;
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to trigger task.');
     }
     
-    // Fallback in case the JSON was valid but didn't contain what we expected.
-    return responseText;
+    return response.text(); // Returns the raw Task ID (e.g. 888)
 };

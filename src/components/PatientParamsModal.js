@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col, Alert } from 'react-bootstrap';
 import { FaUserPlus, FaExclamationTriangle } from 'react-icons/fa';
 
-function PatientParamsModal({ show, handleClose, handleNext, tempJobcardData }) {
+function PatientParamsModal({ show, handleClose,handleBack, handleNext, tempJobcardData }) {
     const [age, setAge] = useState('');
     const [weight, setWeight] = useState('');
     const [allergies, setAllergies] = useState('');
@@ -100,7 +100,9 @@ function PatientParamsModal({ show, handleClose, handleNext, tempJobcardData }) 
                 </Form>
             </Modal.Body>
             <Modal.Footer className="bg-light border-0">
-                <Button variant="outline-secondary" className="px-4 rounded-pill" onClick={handleClose}>Cancel</Button>
+                <Button variant="outline-secondary" className="px-4 rounded-pill" onClick={handleBack}>
+                    Back
+                </Button>
                 <Button className="btn-custom-primary px-5 rounded-pill shadow-sm" onClick={onNext}>
                     Next
                 </Button>

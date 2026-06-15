@@ -6,6 +6,7 @@ import * as chatService from '../services/chatService';
 import notificationSound from '../assets/notification.mp3';
 
 const ChatContext = createContext(null);
+const audio = new Audio(notificationSound);
 
 export const ChatProvider = ({ children }) => {
     const { user } = useAuth();
@@ -13,8 +14,6 @@ export const ChatProvider = ({ children }) => {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [unreadChatTotal, setUnreadChatTotal] = useState(0);
     const [contacts, setContacts] = useState([]);
-
-    const audio = new Audio(notificationSound);
 
     // 1. Initialize Socket Connection
     useEffect(() => {

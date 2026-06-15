@@ -1,34 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col, Alert, Card, InputGroup } from 'react-bootstrap';
-import { FaPlus, FaTrash, FaUserMd, FaFlask, FaWeight, FaCalendarAlt } from 'react-icons/fa';
+import { Modal, Button, Form, Row, Col, Alert, Card } from 'react-bootstrap';
+import { FaPlus, FaTrash, FaFlask, FaSlidersH, FaEdit, FaTimes, FaLock } from 'react-icons/fa';
 import * as inventoryService from '../services/inventoryService';
 import { useAuth } from '../context/AuthContext';
-
-const initialFormState = {
-    name: '',
-    ingredients: [{ inventoryId: '', requiredQuantity: '' }]
-};
 
 function FormulaModal({ show, handleClose, handleSave, item }) {
     const { user } = useAuth();
     const isAuthorized = user?.role !== 'Doctor';
 
     const [inventoryList, setInventoryList] = useState([]);
-    const [formData, setFormData] = useState(initialFormState);
-    const [standards, setStandards] = useState([]); // Array for Age/Weight based rules
+    const [formData, setFormData] = useState({ name: '', formulaType: 'Bolus', bolusDosePerKg: '', infusionRateMin: '', infusionRateMax: '', ingredients: [{ inventoryId: '', requiredQuantity: '' }] });
     const isEditMode = !!item?.formulaId;
 
     useEffect(() => {
         if (show) {
-            const fetchInventory = async () => {
-                try {
-                    const data = await inventoryService.getAllInventory();
-                    setInventoryList(data);
-                } catch (error) {
-                    console.error("Failed to fetch inventory:", error);
-                }
-            };
-            fetchInventory();
+            inventoryService.getAllInventory().then(data => setInventoryList(data));
         }
     }, [show]);
 
@@ -36,32 +22,61 @@ function FormulaModal({ show, handleClose, handleSave, item }) {
         if (item) {
             setFormData({
                 name: item.name,
-                ingredients: item.FormulaDetails?.filter(d => d.formulaPrescriptionId === 0 || !d.formulaPrescriptionId).map(d => ({
+                formulaType: item.formulaType || 'Bolus',
+                bolusDosePerKg: item.bolusDosePerKg || '',
+                infusionRateMin: item.infusionRateMin || '',
+                infusionRateMax: item.infusionRateMax || '',
+                ingredients: item.FormulaDetails?.filter(d => !d.formulaPrescriptionId).map(d => ({
                     inventoryId: d.inventoryId,
                     requiredQuantity: d.requiredQuantity
                 })) || [{ inventoryId: '', requiredQuantity: '' }]
             });
-
-            // Map Prescription Standards if they exist
-            if (item.PrescriptionStandards) {
-                setStandards(item.PrescriptionStandards.map(s => ({
-                    ...s,
-                    ingredients: s.FormulaDetails?.map(d => ({
-                        inventoryId: d.inventoryId,
-                        requiredQuantity: d.requiredQuantity
-                    })) || [{ inventoryId: '', requiredQuantity: '' }]
-                })));
-            } else {
-                setStandards([]);
-            }
         } else {
-            setFormData(initialFormState);
-            setStandards([]);
+            setFormData({ name: '', formulaType: 'Bolus', bolusDosePerKg: '', infusionRateMin: '', infusionRateMax: '', ingredients: [{ inventoryId: '', requiredQuantity: '' }] });
         }
     }, [item, show]);
 
-    // --- General Formula Handlers ---
+    // --- NEW: DYNAMIC HARDWARE MATCH LOCKOUT ENGINE ---
+    // Evaluates the active ingredients inside the modal to find if a machine lock is active
+    const lockedHardwareId = (() => {
+        const selectedIngredientWithHardware = formData.ingredients.find(ing => ing.inventoryId);
+        if (!selectedIngredientWithHardware) return null;
+        
+        const matchedInventoryItem = inventoryList.find(inv => inv.inventoryId === parseInt(selectedIngredientWithHardware.inventoryId, 10));
+        return matchedInventoryItem?.hardwareId || null;
+    })();
+
+    // Helper to get only the allowed inventory items for the dropdown
+    const getFilteredInventoryList = () => {
+        if (!lockedHardwareId) return inventoryList; // If nothing chosen yet, show everything
+        
+        // Show ONLY inventory items loaded on the same machine!
+        return inventoryList.filter(inv => inv.hardwareId === lockedHardwareId);
+    };
+
+    const filteredInventory = getFilteredInventoryList();
+    const activeMachineName = hardwareListFindName(lockedHardwareId);
+
+    function hardwareListFindName(hwId) {
+        if (!hwId || inventoryList.length === 0) return null;
+        const matchedItem = inventoryList.find(inv => inv.hardwareId === hwId);
+        return matchedItem?.Hardware?.name || "Target Robotic Unit";
+    }
+
     const handleNameChange = (e) => setFormData(prev => ({ ...prev, name: e.target.value }));
+    
+    const handleTypeChange = (e) => {
+        const type = e.target.value;
+        setFormData(prev => {
+            const updatedIngredients = type === 'Bolus' 
+                ? [prev.ingredients[0] || { inventoryId: '', requiredQuantity: '' }] 
+                : prev.ingredients;
+                
+            return { ...prev, formulaType: type, ingredients: updatedIngredients };
+        });
+    };
+
+    const handleDoseChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleBaseIngredientChange = (index, e) => {
         const updated = [...formData.ingredients];
@@ -69,54 +84,17 @@ function FormulaModal({ show, handleClose, handleSave, item }) {
         setFormData(prev => ({ ...prev, ingredients: updated }));
     };
 
-    const addBaseIngredient = () => setFormData(prev => ({
-        ...prev, ingredients: [...prev.ingredients, { inventoryId: '', requiredQuantity: '' }]
-    }));
+    const addBaseIngredient = () => {
+        if (formData.formulaType === 'Bolus' && formData.ingredients.length >= 1) return;
+        setFormData(prev => ({
+            ...prev, ingredients: [...prev.ingredients, { inventoryId: '', requiredQuantity: '' }]
+        }));
+    };
 
     const removeBaseIngredient = (index) => {
         const updated = [...formData.ingredients];
         updated.splice(index, 1);
         setFormData(prev => ({ ...prev, ingredients: updated }));
-    };
-
-    // --- Prescription Standards Handlers ---
-    const handleAddStandard = () => {
-        setStandards([...standards, {
-            description: '',
-            minAge: 0, maxAge: 100,
-            minWeight: 0, maxWeight: 200,
-            ingredients: [{ inventoryId: '', requiredQuantity: '' }]
-        }]);
-    };
-
-    const handleRemoveStandard = (index) => {
-        const updated = [...standards];
-        updated.splice(index, 1);
-        setStandards(updated);
-    };
-
-    const handleStandardChange = (index, e) => {
-        const updated = [...standards];
-        updated[index][e.target.name] = e.target.value;
-        setStandards(updated);
-    };
-
-    const handleStdIngredientChange = (stdIndex, ingIndex, e) => {
-        const updated = [...standards];
-        updated[stdIndex].ingredients[ingIndex][e.target.name] = e.target.value;
-        setStandards(updated);
-    };
-
-    const addStdIngredient = (stdIndex) => {
-        const updated = [...standards];
-        updated[stdIndex].ingredients.push({ inventoryId: '', requiredQuantity: '' });
-        setStandards(updated);
-    };
-
-    const removeStdIngredient = (stdIndex, ingIndex) => {
-        const updated = [...standards];
-        updated[stdIndex].ingredients.splice(ingIndex, 1);
-        setStandards(updated);
     };
 
     const onSave = () => {
@@ -127,148 +105,126 @@ function FormulaModal({ show, handleClose, handleSave, item }) {
                 requiredQuantity: parseFloat(ing.requiredQuantity)
             }));
 
-        const formattedStandards = standards.map(s => ({
-            ...s,
-            minAge: parseInt(s.minAge, 10),
-            maxAge: parseInt(s.maxAge, 10),
-            minWeight: parseFloat(s.minWeight),
-            maxWeight: parseFloat(s.maxWeight),
-            ingredients: s.ingredients
-                .filter(ing => ing.inventoryId && ing.requiredQuantity)
-                .map(ing => ({
-                    inventoryId: parseInt(ing.inventoryId, 10),
-                    requiredQuantity: parseFloat(ing.requiredQuantity)
-                }))
-        }));
-
         handleSave({
             name: formData.name,
-            ingredients: formattedBaseIngredients,
-            standards: formattedStandards
+            formulaType: formData.formulaType,
+            bolusDosePerKg: formData.formulaType === 'Bolus' ? parseFloat(formData.bolusDosePerKg) : null,
+            infusionRateMin: formData.formulaType === 'Infusion' ? parseFloat(formData.infusionRateMin) : null,
+            infusionRateMax: formData.formulaType === 'Infusion' ? parseFloat(formData.infusionRateMax) : null,
+            ingredients: formattedBaseIngredients
         });
     };
 
     return (
-        <Modal show={show} onHide={handleClose} size="xl">
-            <Modal.Header closeButton>
-                <Modal.Title>{isEditMode ? 'Edit Formula & Rules' : 'Add New Formula'}</Modal.Title>
+        <Modal show={show} onHide={handleClose} size="xl" centered className="um-modal">
+            <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, #043873 0%, #0a4f9e 100%)', color: 'white' }}>
+                <Modal.Title>
+                    {isEditMode ? <><FaEdit className="me-2 text-warning"/> Edit Formula Specifications</> : <><FaPlus className="me-2 text-warning"/> Create New Formula</>}
+                </Modal.Title>
             </Modal.Header>
-            <Modal.Body>
-                {!isAuthorized && (
-                    <Alert variant="warning">
-                        Your role ('Doctor') does not have permission to modify formulas or standards.
-                    </Alert>
-                )}
+            <Modal.Body className="p-4 bg-light">
+                {!isAuthorized && <Alert variant="warning" className="border-0 shadow-sm">Only Pharmacists are authorized to configure recipes.</Alert>}
                 <fieldset disabled={!isAuthorized}>
                     <Form>
-                        <Card className="mb-4 shadow-sm border-0 bg-light">
-                            <Card.Body>
+                        <Row className="mb-4">
+                            <Col md={8}>
                                 <Form.Group controlId="formFormulaName">
-                                    <Form.Label className="fw-bold text-primary">Formula Name</Form.Label>
-                                    <Form.Control type="text" size="lg" placeholder="e.g. Paracetamol Solution" value={formData.name} onChange={handleNameChange} />
+                                    <Form.Label className="small fw-bold text-muted">FORMULA NAME</Form.Label>
+                                    <Form.Control type="text" placeholder="e.g. Paracetamol Solution" value={formData.name} onChange={handleNameChange} />
                                 </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group controlId="formFormulaType">
+                                    <Form.Label className="small fw-bold text-muted">FORMULATION TYPE</Form.Label>
+                                    <Form.Select value={formData.formulaType} onChange={handleTypeChange}>
+                                        <option value="Bolus">Bolus (Direct Injection)</option>
+                                        <option value="Infusion">Infusion (Continuous Dilution)</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        {/* HARDWARE LOCKOUT INDICATOR */}
+                        {lockedHardwareId && (
+                            <Alert variant="success" className="border-0 shadow-sm d-flex align-items-center mb-4">
+                                <FaLock className="me-3" size={20} />
+                                <div>
+                                    <strong>Machine Lock Active:</strong> Recipe restricted exclusively to ingredients loaded on <strong>{activeMachineName}</strong> to prevent physical port cross-contamination.
+                                </div>
+                            </Alert>
+                        )}
+
+                        {/* DOSING CARDS */}
+                        <Card className="mb-4 border-0 shadow-sm rounded-4">
+                            <Card.Body className="p-4">
+                                <h6 className="text-uppercase fw-bold text-primary mb-3"><FaSlidersH className="me-2"/>Dosing Configuration</h6>
+                                {formData.formulaType === 'Bolus' ? (
+                                    <Row>
+                                        <Col md={6}>
+                                            <Form.Group>
+                                                <Form.Label className="small fw-bold text-warning">Target Ratio (mg/kg)</Form.Label>
+                                                <Form.Control type="number" step="0.1" name="bolusDosePerKg" value={formData.bolusDosePerKg} onChange={handleDoseChange} placeholder="e.g., 5.0" />
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
+                                ) : (
+                                    <Row>
+                                        <Col md={6}>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="small fw-bold text-warning">Min Delivery Rate (mg/kg/hour)</Form.Label>
+                                                <Form.Control type="number" step="0.1" name="infusionRateMin" value={formData.infusionRateMin} onChange={handleDoseChange} placeholder="e.g., 1.0" />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="small fw-bold text-warning">Max Delivery Rate (mg/kg/hour)</Form.Label>
+                                                <Form.Control type="number" step="0.1" name="infusionRateMax" value={formData.infusionRateMax} onChange={handleDoseChange} placeholder="e.g., 4.0" />
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
+                                )}
                             </Card.Body>
                         </Card>
 
-                        <h5 className="mb-3 d-flex align-items-center text-secondary">
-                            <FaFlask className="me-2" /> Base Recipe (Default)
-                        </h5>
+                        <h5 className="mb-3 text-secondary d-flex align-items-center"><FaFlask className="me-2" /> Ingredients Definition</h5>
                         {formData.ingredients.map((ing, idx) => (
-                            <Row key={idx} className="mb-2 align-items-end px-3">
+                            <Row key={idx} className="mb-3 align-items-end px-3">
                                 <Col md={6}>
+                                    <Form.Label className="small fw-bold text-muted">SELECT INGREDIENT</Form.Label>
                                     <Form.Select name="inventoryId" value={ing.inventoryId} onChange={e => handleBaseIngredientChange(idx, e)}>
-                                        <option value="">Select Ingredient...</option>
-                                        {inventoryList.map(inv => <option key={inv.inventoryId} value={inv.inventoryId}>{inv.name} ({inv.unit})</option>)}
+                                        <option value="">Choose item...</option>
+                                        {/* --- RENDERS THE FILTERED COMPATIBLE INGREDIENTS LIST --- */}
+                                        {filteredInventory.map(inv => <option key={inv.inventoryId} value={inv.inventoryId}>{inv.name} ({inv.category === 'API' ? 'API' : 'Diluent'})</option>)}
                                     </Form.Select>
                                 </Col>
                                 <Col md={4}>
-                                    <Form.Control name="requiredQuantity" type="number" placeholder="Qty" value={ing.requiredQuantity} onChange={e => handleBaseIngredientChange(idx, e)} />
+                                    <Form.Label className="small fw-bold text-muted">VOLUME (mL)</Form.Label>
+                                    <Form.Control name="requiredQuantity" type="number" placeholder="Volume" value={ing.requiredQuantity} onChange={e => handleBaseIngredientChange(idx, e)} />
                                 </Col>
                                 <Col md={2}>
-                                    <Button variant="outline-danger" onClick={() => removeBaseIngredient(idx)}><FaTrash /></Button>
+                                    <Button 
+                                        variant="outline-danger" 
+                                        className="w-100" 
+                                        onClick={() => removeBaseIngredient(idx)}
+                                        disabled={formData.formulaType === 'Bolus'}
+                                    >
+                                        <FaTrash />
+                                    </Button>
                                 </Col>
                             </Row>
                         ))}
-                        <Button variant="link" className="px-3 mb-4 text-decoration-none" onClick={addBaseIngredient}>
-                            <FaPlus className="me-1" /> Add Ingredient
-                        </Button>
-
-                        <hr />
-                        <h5 className="mb-3 d-flex align-items-center text-secondary">
-                            <FaUserMd className="me-2" /> Age/Weight Specific Standards
-                        </h5>
-
-                        {standards.map((std, sIdx) => (
-                            <Card key={sIdx} className="mb-4 border-primary-subtle shadow-sm">
-                                <Card.Header className="bg-white d-flex justify-content-between align-items-center">
-                                    <Form.Control 
-                                        className="border-0 fw-bold w-50" 
-                                        name="description" 
-                                        placeholder="Rule Description (e.g. Infant / Heavyweight)" 
-                                        value={std.description} 
-                                        onChange={e => handleStandardChange(sIdx, e)} 
-                                    />
-                                    <Button variant="outline-danger" size="sm" onClick={() => handleRemoveStandard(sIdx)}>
-                                        <FaTrash className="me-1" /> Remove Rule
-                                    </Button>
-                                </Card.Header>
-                                <Card.Body>
-                                    <Row className="mb-4">
-                                        <Col md={3}>
-                                            <Form.Label><FaCalendarAlt className="me-1"/> Age Range (Years)</Form.Label>
-                                            <InputGroup size="sm">
-                                                <Form.Control name="minAge" type="number" placeholder="Min" value={std.minAge} onChange={e => handleStandardChange(sIdx, e)} />
-                                                <InputGroup.Text>to</InputGroup.Text>
-                                                <Form.Control name="maxAge" type="number" placeholder="Max" value={std.maxAge} onChange={e => handleStandardChange(sIdx, e)} />
-                                            </InputGroup>
-                                        </Col>
-                                        <Col md={3}>
-                                            <Form.Label><FaWeight className="me-1"/> Weight Range (kg)</Form.Label>
-                                            <InputGroup size="sm">
-                                                <Form.Control name="minWeight" type="number" placeholder="Min" value={std.minWeight} onChange={e => handleStandardChange(sIdx, e)} />
-                                                <InputGroup.Text>to</InputGroup.Text>
-                                                <Form.Control name="maxWeight" type="number" placeholder="Max" value={std.maxWeight} onChange={e => handleStandardChange(sIdx, e)} />
-                                            </InputGroup>
-                                        </Col>
-                                    </Row>
-
-                                    <div className="bg-light p-3 rounded">
-                                        <div className="fw-bold mb-2 small text-uppercase text-muted">Rule-Specific Ingredients:</div>
-                                        {std.ingredients.map((ing, iIdx) => (
-                                            <Row key={iIdx} className="mb-2">
-                                                <Col md={6}>
-                                                    <Form.Select name="inventoryId" size="sm" value={ing.inventoryId} onChange={e => handleStdIngredientChange(sIdx, iIdx, e)}>
-                                                        <option value="">Select Item...</option>
-                                                        {inventoryList.map(inv => <option key={inv.inventoryId} value={inv.inventoryId}>{inv.name}</option>)}
-                                                    </Form.Select>
-                                                </Col>
-                                                <Col md={4}>
-                                                    <Form.Control name="requiredQuantity" size="sm" type="number" placeholder="Qty" value={ing.requiredQuantity} onChange={e => handleStdIngredientChange(sIdx, iIdx, e)} />
-                                                </Col>
-                                                <Col md={2}>
-                                                    <Button variant="outline-danger" size="sm" onClick={() => removeStdIngredient(sIdx, iIdx)}><FaTrash /></Button>
-                                                </Col>
-                                            </Row>
-                                        ))}
-                                        <Button variant="link" className="p-0 small text-decoration-none" onClick={() => addStdIngredient(sIdx)}>
-                                            <FaPlus className="me-1" /> Add Rule Ingredient
-                                        </Button>
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        ))}
-
-                        <Button variant="outline-primary" className="w-100 py-3" style={{ borderStyle: 'dashed' }} onClick={handleAddStandard}>
-                            <FaPlus className="me-2" /> Add New Prescription Rule
-                        </Button>
+                        
+                        {formData.formulaType !== 'Bolus' && (
+                            <Button variant="link" className="px-3 text-decoration-none fw-bold" onClick={addBaseIngredient}>
+                                + Add Ingredient Row
+                            </Button>
+                        )}
                     </Form>
                 </fieldset>
             </Modal.Body>
-            <Modal.Footer>
-                <Button className="btn-custom-secondary" onClick={handleClose}>Close</Button>
-                <Button className="btn-custom-primary" onClick={onSave} disabled={!isAuthorized}>
-                    {isEditMode ? 'Update Formula & Rules' : 'Save Everything'}
-                </Button>
+            <Modal.Footer className="bg-light border-0">
+                <Button variant="outline-secondary" className="px-4 rounded-pill" onClick={handleClose}><FaTimes/> Close</Button>
+                <Button className="btn-custom-primary px-5 rounded-pill shadow-sm" onClick={onSave} disabled={!isAuthorized}>Save Recipe</Button>
             </Modal.Footer>
         </Modal>
     );

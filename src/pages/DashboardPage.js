@@ -70,6 +70,7 @@ function DashboardPage() {
 
         fetchMainData();
         return () => { isMounted = false; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [timeFilter]); // Only depends on timeFilter now
 
     // FETCH AI DATA
@@ -161,7 +162,7 @@ function DashboardPage() {
                             <div className="small mt-1 text-dark">{log.message}</div>
                         </div>
                     ))}
-                    {(!data?.auditFeed || data.auditFeed.length === 0) && <p className="text-muted text-center mt-4">No recent activity.</p>}
+                    {(!data?.auditFeed || data.auditFeed.length === 0) && <p className="text-muted text-center mt-">No recent activity.</p>}
                 </div>
             </DashboardCard>
             

@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Table, Button, Card, Alert, Spinner, Form, Row, Col, InputGroup, Badge } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaArchive, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaArchive, FaSearch, FaEye } from 'react-icons/fa';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom'; // NEW
+import { useNavigate } from 'react-router-dom';
 import * as hardwareService from '../services/hardwareService';
 import HardwareModal from '../components/HardwareModal';
+import HardwarePreviewModal from '../components/HardwarePreviewModal'; // NEW
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 
 function HardwarePage() {
-    const navigate = useNavigate(); // NEW
+    const navigate = useNavigate();
     const [hardwareList, setHardwareList] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
@@ -17,8 +18,11 @@ function HardwarePage() {
     const [error, setError] = useState('');
 
     const [showHardwareModal, setShowHardwareModal] = useState(false);
-    const [showArchiveModal, setShowArchiveModal] = useState(false); // Renamed conceptually
+    const [showPreviewModal, setShowPreviewModal] = useState(false); // NEW
+    const [showArchiveModal, setShowArchiveModal] = useState(false);
+    
     const [currentHardware, setCurrentHardware] = useState(null);
+    const [selectedForPreview, setSelectedForPreview] = useState(null); // NEW
     const [hardwareToArchive, setHardwareToArchive] = useState(null);
     const [isArchiving, setIsArchiving] = useState(false);
 
@@ -50,6 +54,9 @@ function HardwarePage() {
     const handleAdd = () => { setCurrentHardware(null); setShowHardwareModal(true); };
     const handleEdit = (hardware) => { setCurrentHardware(hardware); setShowHardwareModal(true); };
     const handleArchiveClick = (hardware) => { setHardwareToArchive(hardware); setShowArchiveModal(true); };
+    
+    // NEW: Handle diagnostics preview click
+    const handlePreviewClick = (hardware) => { setSelectedForPreview(hardware); setShowPreviewModal(true); };
 
     const handleSaveHardware = async (hardwareData) => {
         try {
@@ -64,7 +71,7 @@ function HardwarePage() {
         if (!hardwareToArchive) return;
         setIsArchiving(true);
         try {
-            await hardwareService.deleteHardware(hardwareToArchive.hardwareId); // The backend delete now archives
+            await hardwareService.deleteHardware(hardwareToArchive.hardwareId);
             setShowArchiveModal(false);
             setHardwareToArchive(null);
             fetchHardware();
@@ -118,16 +125,14 @@ function HardwarePage() {
                                             <td><Badge bg="light" text="dark" className="border">#{hw.hardwareId}</Badge></td>
                                             <td className="entity-name-dark-blue">{hw.name}</td>
                                             <td className="text-muted">{hw.description}</td>
-                                            <td><Badge bg={hw.status ? 'success' : 'secondary'} className="px-3 py-2">{hw.status ? 'Active' : 'Inactive'}</Badge></td>
+                                            <td><span className={`custom-status-badge ${hw.status ? 'bg-status-active' : 'bg-status-inactive'}`}>{hw.status ? 'Active' : 'Inactive'}</span></td>
                                             <td className="small text-muted">{hw.lastMaintenanceDate ? format(new Date(hw.lastMaintenanceDate), 'dd/MM/yyyy') : 'N/A'}</td>
                                             <td className="text-center">
                                                 <div className="d-flex justify-content-center gap-2">
-                                                    <button className="btn-table-action" onClick={() => handleEdit(hw)} title="Edit Hardware">
-                                                        <FaEdit />
-                                                    </button>
-                                                    <button className="btn-table-action" onClick={() => handleArchiveClick(hw)} title="Archive Hardware">
-                                                        <FaArchive />
-                                                    </button>
+                                                    {/* NEW: PREVIEW WEBGL BUTTON */}
+                                                    <button className="btn-table-action" onClick={() => handlePreviewClick(hw)} title="Run WebGL Diagnostics"><FaEye /></button>
+                                                    <button className="btn-table-action" onClick={() => handleEdit(hw)} title="Edit Hardware"><FaEdit /></button>
+                                                    <button className="btn-table-action" onClick={() => handleArchiveClick(hw)} title="Archive Hardware"><FaArchive /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -137,7 +142,6 @@ function HardwarePage() {
                         </div>
                     )}
 
-                    {/* VIEW ARCHIVED LINK */}
                     {!loading && (
                         <div className="d-flex justify-content-center mt-4">
                             <Button variant="light" className="archive-bottom-btn shadow-sm" onClick={() => navigate('/hardware/archive')}>
@@ -149,13 +153,11 @@ function HardwarePage() {
             </Card>
 
             <HardwareModal show={showHardwareModal} handleClose={() => setShowHardwareModal(false)} handleSave={handleSaveHardware} hardware={currentHardware} />
-            <DeleteConfirmationModal 
-                show={showArchiveModal} handleClose={() => setShowArchiveModal(false)} handleConfirm={handleConfirmArchive} 
-                itemName={hardwareToArchive?.name} 
-                entityName="Hardware" 
-                actionType="Archive" 
-                isProcessing={isArchiving} 
-            />
+            
+            {/* NEW: DIAGNOSTICS PREVIEW MODAL */}
+            <HardwarePreviewModal show={showPreviewModal} handleClose={() => setShowPreviewModal(false)} hardware={selectedForPreview} />
+            
+            <DeleteConfirmationModal show={showArchiveModal} handleClose={() => setShowArchiveModal(false)} handleConfirm={handleConfirmArchive} itemName={hardwareToArchive?.name} entityName="Hardware" actionType="Archive" isProcessing={isArchiving} />
         </>
     );
 }
