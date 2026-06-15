@@ -4,11 +4,13 @@ import { Modal, Button, Spinner, Alert } from 'react-bootstrap';
 import { FaUserShield, FaExclamationTriangle, FaCamera} from 'react-icons/fa';
 
 const getJetsonApiBase = () => {
-    const { hostname, protocol } = window.location;
+    const { hostname } = window.location;
+    // Keep this so it still works if you test the frontend locally
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
         return 'http://10.207.200.53:8000'; 
     }
-    return protocol === 'http:' ? '' : 'http://100.123.35.101:8000'; 
+    // Your brand new secure public API endpoint!
+    return 'https://ubuntu.tail39d197.ts.net'; 
 };
 
 const JETSON_API_BASE = getJetsonApiBase();

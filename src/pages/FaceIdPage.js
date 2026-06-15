@@ -4,8 +4,8 @@ import { Card, Row, Col, Spinner } from 'react-bootstrap';
 import { FaDesktop } from 'react-icons/fa';
 
 function FaceIdPage() {
-    // IP address of your physical Jetson Orin Nano
-    const JETSON_DASHBOARD_URL = 'http://100.123.35.101:5173';
+    // Point this to your secure dashboard funnel port
+    const JETSON_DASHBOARD_URL = 'https://ubuntu.tail39d197.ts.net:8443';
     const [isConnecting, setIsConnecting] = useState(true);
 
     useEffect(() => {
