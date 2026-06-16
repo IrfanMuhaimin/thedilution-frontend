@@ -147,17 +147,20 @@ function JobcardManagementTab({ onExecuteSuccess }) {
 
     const handleExecute = async (jobcard) => {
         setExecutingId(jobcard.jobcardId);
+        setError(''); // Clear any old errors
         try {
             const result = await jobcardService.executeJobcard(jobcard.jobcardId, user.userId);
-            alert(result.message);
-            fetchData();
             
-            navigate('/jobcards', { 
-                state: { activeExecutionHardwareId: jobcard.hardwareId } 
-            });
+            // Success Popup
+            alert(`✅ SUCCESS\n\n${result.message}`);
+            
+            fetchData();
             onExecuteSuccess();
         } catch (err) { 
-            setError(err.message); 
+            // --- NEW: POPUP MODAL FOR OFFLINE ERRORS ---
+            alert(`❌ HARDWARE ALERT\n\n${err.message}`);
+            
+            setError(err.message); // Also keep it as red text at top of page as backup
         } finally { 
             setExecutingId(null); 
         }
