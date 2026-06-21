@@ -2,12 +2,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal, Button, Spinner, Alert } from 'react-bootstrap';
 
-// Dynamically select protocol base to prevent Mixed Content security blocking
+// Dynamically select protocol base to maintain friend's working proxy path
 const JETSON_API_BASE = window.location.protocol === 'http:'
    ? ''
    : 'http://100.123.35.101:8000';
 
-function SecurityOverlay({ isVisible, onVerified, onClose }) {
+function SecurityOverlay({ isVisible, onVerified, onClose, isSecondVerification = false }) {
    const [isVerifying, setIsVerifying] = useState(false);
    const [status, setStatus] = useState("Initializing...");
    const [error, setError] = useState(null);
@@ -69,7 +69,7 @@ function SecurityOverlay({ isVisible, onVerified, onClose }) {
 
        return () => {
            if (interval) clearInterval(interval);
-           // 4. CLEANUP: Tell Jetson to stop looking for faces when we close
+           // 4. CLEANUP: Tell Jetson to stop looking for faces when closed
            if (isVisible) {
                fetch(`${JETSON_API_BASE}/api/verification/stop`, { method: 'POST' }).catch(() => {});
            }
@@ -79,9 +79,18 @@ function SecurityOverlay({ isVisible, onVerified, onClose }) {
    return (
        <Modal show={isVisible} onHide={onClose} backdrop="static" keyboard={false} centered className="um-modal">
            <Modal.Header closeButton style={{ background: 'linear-gradient(135deg, #043873 0%, #0a4f9e 100%)', color: 'white' }}>
-               <Modal.Title>Face ID Verification</Modal.Title>
+               <Modal.Title>
+                   {isSecondVerification ? "Biometric Re-verification" : "Face ID Verification"}
+               </Modal.Title>
            </Modal.Header>
            <Modal.Body className="text-center p-4">
+               {/* Context alert matching your friend's styling framework */}
+               {isSecondVerification && !error && (
+                   <Alert variant="info" className="border-0 py-2 mb-3 shadow-sm text-start small">
+                       <strong>🔒 Re-verification Required:</strong> Scan your face to extend the linear actuator and open the cabinet door.
+                   </Alert>
+               )}
+
                {error ? (
                    <Alert variant="danger" className="border-0 shadow-sm">{error}</Alert>
                ) : (
@@ -99,7 +108,6 @@ function SecurityOverlay({ isVisible, onVerified, onClose }) {
                        }}>
                            {isVisible && (
                                <img
-                                   // Point to /video_feed on the Jetson domain
                                    src={`${JETSON_API_BASE}/video_feed?t=${Date.now()}`}
                                    alt="Live Security Feed"
                                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
