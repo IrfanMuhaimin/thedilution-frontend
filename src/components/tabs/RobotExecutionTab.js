@@ -1,21 +1,38 @@
-import React, { useState, useEffect, useCallback} from 'react';
-import { Table, Button, Alert, Spinner, Form, Row, Col, Card, Badge } from 'react-bootstrap';
-import { FaRobot, FaExclamationTriangle, FaCircle, FaLock } from 'react-icons/fa';
-import { useLocation } from 'react-router-dom'; // NEW
+// src/components/tabs/RobotExecutionTab.js
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Table, Button, Alert, Spinner, Form, Row, Col, Card, Badge, Modal } from 'react-bootstrap';
+import { FaExclamationTriangle, FaCircle, FaLock, FaClock } from 'react-icons/fa';
+import { useLocation, useNavigate } from 'react-router-dom';
 import * as hardwareService from '../../services/hardwareService';
 import * as robotService from '../../services/robotService';
+import SecurityOverlay from '../SecurityOverlay';
 import '../../styles/RobotExecutionTab.css';
 
+const JETSON_API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+   ? 'http://10.207.200.53:8000'
+   : (window.location.protocol === 'http:' ? '' : 'https://ubuntu.tail39d197.ts.net');
+
 function RobotExecutionTab() {
-    const location = useLocation(); // NEW
+    const location = useLocation();
+    const navigate = useNavigate();
+    
     const [hardwareList, setHardwareList] = useState([]);
     const [selectedHardware, setSelectedHardware] = useState(null);
-    const [isLocked, setIsLocked] = useState(false); // NEW: Dropdown lock state
+    const [isLocked, setIsLocked] = useState(false);
     const [logs, setLogs] = useState([]);
     const [statusMessage, setStatusMessage] = useState('');
     const [isTriggering, setIsTriggering] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+
+    // --- NEW DYNAMIC STATE MACHINE STATES ---
+    const [taskPhase, setTaskPhase] = useState('idle'); // 'idle' | 'mixing' | 'security-check' | 'dispensing'
+    const [mixTimeLeft, setMixTimeLeft] = useState(120); // 10-second timer for quick on-screen demo
+    const taskPhaseRef = useRef(taskPhase);
+
+    useEffect(() => {
+        taskPhaseRef.current = taskPhase;
+    }, [taskPhase]);
 
     // 1. Fetch available active hardware devices
     useEffect(() => {
@@ -24,13 +41,12 @@ function RobotExecutionTab() {
                 const activeUnits = data.filter(h => h.status && !h.isArchived);
                 setHardwareList(activeUnits);
                 
-                // Check if we arrived here because of an active execution redirect
                 if (location.state && location.state.activeExecutionHardwareId) {
                     const lockedId = parseInt(location.state.activeExecutionHardwareId, 10);
                     const lockedHw = activeUnits.find(h => h.hardwareId === lockedId);
                     if (lockedHw) {
                         setSelectedHardware(lockedHw);
-                        setIsLocked(true); // LOCK THE DROPDOWN
+                        setIsLocked(true); 
                     }
                 } else if (activeUnits.length > 0) {
                     setSelectedHardware(activeUnits[0]);
@@ -43,7 +59,7 @@ function RobotExecutionTab() {
             });
     }, [location.state]);
 
-    // 2. Fetch logs for the selected hardware only
+    // 2. Fetch logs for selected hardware
     const fetchLogs = useCallback(async () => {
         if (!selectedHardware) return;
         try {
@@ -60,6 +76,22 @@ function RobotExecutionTab() {
         return () => clearInterval(intervalId);
     }, [fetchLogs]);
 
+    // 3. Mixing Countdown Timer Loop
+    useEffect(() => {
+        let timerInterval = null;
+        if (taskPhase === 'mixing' && mixTimeLeft > 0) {
+            timerInterval = setInterval(() => {
+                setMixTimeLeft((prev) => prev - 1);
+            }, 1000);
+        } else if (taskPhase === 'mixing' && mixTimeLeft === 0) {
+            console.log("[RobotTab] Mixing complete. Forcing Face ID security verification before opening door.");
+            setTaskPhase('security-check');
+        }
+        return () => {
+            if (timerInterval) clearInterval(timerInterval);
+        };
+    }, [taskPhase, mixTimeLeft]);
+
     const handleHardwareChange = (e) => {
         const hwId = parseInt(e.target.value, 10);
         const selected = hardwareList.find(h => h.hardwareId === hwId);
@@ -67,6 +99,7 @@ function RobotExecutionTab() {
         setLogs([]); 
     };
 
+    // --- TRIGGER ACTION AND START COUNTDOWN ---
     const handleRunTask = async (taskName) => {
         if (!selectedHardware) return;
         setIsTriggering(true);
@@ -75,14 +108,57 @@ function RobotExecutionTab() {
             const response = await robotService.triggerTask(taskName, selectedHardware.hardwareId);
             const logId = parseInt(response);
             if (isNaN(logId)) throw new Error(`Invalid response: ${response}`);
-            setStatusMessage(`✅ Handshake verified! Task triggered with ID ${logId}.`);
+            
+            setStatusMessage(`✅ Handshake verified! Robot is running ${taskName}.`);
             fetchLogs();
+
+            // --- ACTUATOR TIMING TRIGGER ---
+            setMixTimeLeft(120); // Start 2min countdown for demo
+            setTaskPhase('mixing');
+
         } catch (err) {
             setStatusMessage(`❌ Error: ${err.message}`);
         } finally {
             setIsTriggering(false);
         }
     };
+
+    // --- BIOMETRIC RE-VERIFICATION PASSED ---
+    const handleReverificationSuccess = useCallback((recognizedUser) => {
+        console.log(`[RobotTab] Biometric check passed for: ${recognizedUser}. Opening Cabinet...`);
+        setTaskPhase('dispensing');
+
+        // Call Actuator Extend API
+        fetch(`${JETSON_API_BASE}/api/actuator/extend`, { method: 'POST' })
+            .then(res => {
+                if (!res.ok) throw new Error(`Actuator error status ${res.status}`);
+                return res.json();
+            })
+            .then(data => console.log("[RobotTab] Actuator extended successfully:", data))
+            .catch(err => console.error("[RobotTab] Actuator extend failure:", err));
+    }, []);
+
+    const handleCloseSecurityCheck = useCallback(() => {
+        console.log("[RobotTab] Re-verification cancelled.");
+        setTaskPhase('idle');
+    }, []);
+
+    // --- CONFIRM TAKEN & ACTUATOR RETRACT ---
+    const handleMedicineTaken = useCallback(() => {
+        console.log("[RobotTab] Medicine collection confirmed. Locking Cabinet...");
+
+        fetch(`${JETSON_API_BASE}/api/actuator/retract`, { method: 'POST' })
+            .then(res => {
+                if (!res.ok) throw new Error(`Actuator error status ${res.status}`);
+                return res.json();
+            })
+            .then(data => console.log("[RobotTab] Actuator retracted successfully:", data))
+            .catch(err => console.error("[RobotTab] Actuator retract failure:", err));
+
+        setTaskPhase('idle');
+        setStatusMessage("✅ Process Finished. Medication secured, cabinet door locked.");
+        navigate('/jobcards'); // Jump back to management list
+    }, [navigate]);
     
     const getStatusStyle = (status) => {
         if (!status) return { color: '#6c757d', fontWeight: 'bold' };
@@ -97,6 +173,14 @@ function RobotExecutionTab() {
 
     return (
         <div>
+            {/* DYNAMIC FACE ID RE-VERIFICATION CHECKS */}
+            <SecurityOverlay
+                isVisible={taskPhase === 'security-check'}
+                onVerified={handleReverificationSuccess}
+                onClose={handleCloseSecurityCheck}
+                isSecondVerification={true}
+            />
+
             {/* MACHINE SELECTOR */}
             <Card className="border-0 shadow-sm mb-4 rounded-4 bg-light">
                 <Card.Body className="p-3">
@@ -104,14 +188,12 @@ function RobotExecutionTab() {
                         <Col md={6}>
                             <Form.Group className="mb-0">
                                 <Form.Label className="small fw-bold text-primary">
-                                    <FaRobot className="me-2"/>
                                     {isLocked ? "MONITORING ACTIVE EXECUTION UNIT" : "SELECT ROBOTIC UNIT TO MONITOR"}
                                 </Form.Label>
-                                {/* --- COMPULSORY LOCK: Disable dropdown if active execution is running --- */}
                                 <Form.Select 
                                     value={selectedHardware?.hardwareId || ''} 
                                     onChange={handleHardwareChange}
-                                    disabled={isLocked} // Lock it!
+                                    disabled={isLocked}
                                     className={isLocked ? "border-success bg-white fw-bold text-success" : ""}
                                 >
                                     {hardwareList.map(hw => (
@@ -137,6 +219,23 @@ function RobotExecutionTab() {
                     </Row>
                 </Card.Body>
             </Card>
+
+            {/* DYNAMIC TIMER ALERTS */}
+            {taskPhase === 'mixing' && (
+                <Alert variant="warning" className="d-flex justify-content-between align-items-center py-3 px-4 mb-4 border-0 shadow-sm rounded-4">
+                    <div>
+                        <FaClock className="me-2 text-warning fs-5" />
+                        <strong>Robotic Arm Mixing:</strong> Formulation is currently blending. Acting secure lockout. Door remains locked for:{" "}
+                        <span className="font-monospace fw-bold text-danger fs-5">
+                            {mixTimeLeft} seconds
+                        </span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                        <Spinner animation="border" variant="warning" size="sm" className="me-2" />
+                        <small className="text-muted fw-bold">Processing Formulation...</small>
+                    </div>
+                </Alert>
+            )}
 
             {/* DYNAMIC 3D DIGITAL TWIN */}
             <h3 className="text-center mb-3 text-primary fw-bold">{selectedHardware?.name || 'Robotic'} 3D Simulation</h3>
@@ -165,13 +264,13 @@ function RobotExecutionTab() {
 
             {/* CONTROLS */}
             <div className="controls mb-4">
-                <Button variant="success" className="rounded-pill px-4 shadow-sm me-3" onClick={() => handleRunTask('task1')} disabled={isTriggering || !selectedHardware}>
+                <Button variant="success" className="rounded-pill px-4 shadow-sm me-3" onClick={() => handleRunTask('task1')} disabled={isTriggering || !selectedHardware || taskPhase === 'mixing'}>
                     {isTriggering ? <Spinner as="span" animation="border" size="sm"/> : 'Run Task 1 (Robot Arm)'}
                 </Button>
-                <Button variant="primary" className="rounded-pill px-4 shadow-sm" onClick={() => handleRunTask('task2')} disabled={isTriggering || !selectedHardware}>
+                <Button variant="primary" className="rounded-pill px-4 shadow-sm" onClick={() => handleRunTask('task2')} disabled={isTriggering || !selectedHardware || taskPhase === 'mixing'}>
                     {isTriggering ? <Spinner as="span" animation="border" size="sm"/> : 'Run Task 2 (Centrifuge)'}
                 </Button>
-                {isLocked && (
+                {isLocked && taskPhase === 'idle' && (
                     <Button variant="outline-secondary" className="rounded-pill px-4 shadow-sm ms-3" onClick={() => { setIsLocked(false); setStatusMessage(''); }}>
                         Unlock Selector
                     </Button>
@@ -218,6 +317,41 @@ function RobotExecutionTab() {
                     </tbody>
                 </Table>
             </div>
+
+            {/* Cabinet Taken Drawer confirmation modal (Moved inside tab!) */}
+            <Modal 
+                show={taskPhase === 'dispensing'} 
+                backdrop="static" 
+                keyboard={false} 
+                centered
+                className="um-modal"
+            >
+                <Modal.Header className="text-white border-0 py-3" style={{ background: 'linear-gradient(135deg, #043873 0%, #0a4f9e 100%)' }}>
+                    <Modal.Title className="fw-bold">🔓 Cabinet Door Unlocked</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="text-center py-4 px-5">
+                    <p className="fs-5 mb-3 fw-semibold text-dark">
+                        The linear actuator has extended, and the medicine cabinet door is now open.
+                    </p>
+                    <p className="text-muted mb-4 small">
+                        Please retrieve the prepared context compounding profile from the cabinet. Once complete, confirm closure below to retract containment components.
+                    </p>
+                    <div className="my-3 d-flex justify-content-center align-items-center text-success">
+                        <Spinner animation="grow" variant="success" size="sm" className="me-2" />
+                        <strong className="text-uppercase tracking-wider small">Waiting for collection signature...</strong>
+                    </div>
+                </Modal.Body>
+                <Modal.Footer className="justify-content-center border-0 pb-4 bg-light">
+                    <Button 
+                        variant="success" 
+                        size="lg" 
+                        onClick={handleMedicineTaken} 
+                        className="rounded-pill px-5 py-2 fw-bold shadow"
+                    >
+                        Yes, I have taken the medicine
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 }

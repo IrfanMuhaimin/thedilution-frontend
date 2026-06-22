@@ -3,7 +3,7 @@ import React, { useState, useCallback } from 'react';
 import { Card, Tabs, Tab, Alert } from 'react-bootstrap';
 import { useAuth } from '../context/AuthContext';
 import JobcardManagementTab from '../components/tabs/JobcardManagementTab';
-import RobotExecutionTab from '../components/tabs/RobotExecutionTab'; // 1. IMPORT THE COMPONENT HERE
+import RobotExecutionTab from '../components/tabs/RobotExecutionTab';
 import SecurityOverlay from '../components/SecurityOverlay';
 import '../styles/DrugManagement.css';
 
@@ -16,23 +16,31 @@ function JobcardsPage() {
    const [isVerified, setIsVerified] = useState(!IS_FACE_ID_ENABLED); // Verified by default if security is off
    const [showSecurityCheck, setShowSecurityCheck] = useState(false);
 
-   // Role protection (Admins, Pharmacists, and Doctors can run tasks)
    const canAccessExecution = user ? (user.role === 'Admin' || user.role === 'Pharmacist' || user.role === 'Doctor') : false;
 
+   // Tab Selection Handler (With Security Lock reset)
    const handleTabSelect = useCallback((key) => {
-       if (key === 'execution' && canAccessExecution && !isVerified && IS_FACE_ID_ENABLED) {
-           setShowSecurityCheck(true);
-           setActiveTab(key);
+       if (key === 'execution') {
+           if (canAccessExecution && !isVerified && IS_FACE_ID_ENABLED) {
+               setShowSecurityCheck(true);
+               setActiveTab(key);
+           } else {
+               setActiveTab(key);
+           }
        } else {
            setActiveTab(key);
-           if (key !== 'execution') {
-               setShowSecurityCheck(false);
+           setShowSecurityCheck(false);
+           
+           // --- THE SECURITY FIX: LOCK THE SESSION ON TAB CHANGE ---
+           // If they leave the execution tab, they MUST verify their face again on return
+           if (IS_FACE_ID_ENABLED) {
+               setIsVerified(false);
            }
        }
    }, [canAccessExecution, isVerified]);
 
-   const handleVerificationSuccess = useCallback((recognizedUser) => {
-       console.log(`Access granted by Face ID to: ${recognizedUser}`);
+   const handleVerificationSuccess = useCallback(() => {
+       console.log(`Access granted by Face ID.`);
        setIsVerified(true);
        setShowSecurityCheck(false);
        setActiveTab('execution');
@@ -44,6 +52,8 @@ function JobcardsPage() {
    }, []);
 
    const handleExecuteSuccess = useCallback(() => {
+       // Clicking "Execute" from the table triggers the tab transition,
+       // which will now always force a Face ID scan because they were on the 'management' tab (session is locked)
        handleTabSelect('execution');
    }, [handleTabSelect]);
 
@@ -74,8 +84,6 @@ function JobcardsPage() {
                    <Tab eventKey="management" title="Jobcard Management" className="p-4">
                        <JobcardManagementTab onExecuteSuccess={handleExecuteSuccess} />
                    </Tab>
-                   
-                   {/* 2. REPLACED THE HARDCODED IFRAME WITH ROBOTEXECUTIONTAB */}
                    <Tab eventKey="execution" title="Robot Execution & Monitoring" className="p-4">
                        {!canAccessExecution ? (
                            <div className="text-center p-5">
@@ -85,7 +93,6 @@ function JobcardsPage() {
                                </Alert>
                            </div>
                        ) : isVerified ? (
-                           // Mount the fully integrated component!
                            <RobotExecutionTab />
                        ) : (
                            <div className="text-center p-5">
